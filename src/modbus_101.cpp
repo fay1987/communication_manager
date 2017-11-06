@@ -2296,11 +2296,8 @@ bool PDT::CProto_Modbus_101::make_constantValue_read( ctrl_pro_constantvalue* pC
 	m_current_send_cmd.cmd[nLength++] = 0x16;
 	m_current_send_cmd.length = nLength;
 	
-	p->nextCmdNo = m_current_send_cmd.currFeatureptr->nextCmdNo;
-	m_current_send_cmd.currFeatureptr = p;
-	m_currPollCmdno = p->cmdNo;
 
-	ACE_OS::strncpy(m_current_send_cmd.cmdStr, p->cmdDesc, PMC_DESCRIBE_STRING_LENGTH);
+	ACE_OS::strncpy(m_current_send_cmd.cmdStr, "", PMC_DESCRIBE_STRING_LENGTH);
 
 	return true;
 }
@@ -2327,8 +2324,8 @@ bool PDT::CProto_Modbus_101::make_constantValue_write( ctrl_pro_constantvalue* p
 	m_current_send_cmd.cmd[nLength++] = 0x00;			// 
 	m_current_send_cmd.cmd[nLength++] = 0x01;			// 公共地址
 	m_current_send_cmd.cmd[nLength++] = 0x00;			// 
-	m_current_send_cmd.cmd[nLength++] = p->addrL;			// 信息体地址
-	m_current_send_cmd.cmd[nLength++] = p->addrH;			// 
+	m_current_send_cmd.cmd[nLength++] = 0x02;			// 信息体地址
+	m_current_send_cmd.cmd[nLength++] = 0x69;			//  
 	m_current_send_cmd.cmd[nLength++] = 0x00;			// 文件名
 	m_current_send_cmd.cmd[nLength++] = 0x00;			// 
 	m_current_send_cmd.cmd[nLength++] = 0x00;			// 节名
@@ -2354,11 +2351,7 @@ bool PDT::CProto_Modbus_101::make_constantValue_write( ctrl_pro_constantvalue* p
 	m_current_send_cmd.cmd[nLength++] = 0x16;
 	m_current_send_cmd.length = nLength;
 
-	p->nextCmdNo = m_current_send_cmd.currFeatureptr->nextCmdNo;
-	m_current_send_cmd.currFeatureptr = p;
-	m_currPollCmdno = p->cmdNo;
-
-	ACE_OS::strncpy(m_current_send_cmd.cmdStr, p->cmdDesc, PMC_DESCRIBE_STRING_LENGTH);
+	ACE_OS::strncpy(m_current_send_cmd.cmdStr, "", PMC_DESCRIBE_STRING_LENGTH);
 
 	return true;
 }
@@ -4472,7 +4465,6 @@ bool PDT::CProto_Modbus_101::sendUdp()
 	//读数据，加入vector
 	QString str;
 	QStringList ll;
-	bool ok;
 	fgets(buff, sizeof(buff), fp);
 	while(fgets(buff, sizeof(buff), fp))
 	{
@@ -4493,14 +4485,10 @@ bool PDT::CProto_Modbus_101::sendUdp()
 		ll.clear();
 	}
 
-
-
-	//char mac[10];
 	int i = 0;
 	if (m_vecPara.size() > 0)
 	{
 		sendpara para = m_vecPara.last();
-		//sprintf(mac, "%.10lX",para.lmac);
 		str = QString("%1").arg(para.cmac);
 
 		m_current_send_cmd.cmd[i++] = 0x00;
@@ -4546,8 +4534,6 @@ bool PDT::CProto_Modbus_101::sendUdp()
 		m_current_send_cmd.length = i;
 
 		m_vecPara.pop_back();
-		//ACE_OS::strncpy(m_current_send_cmd.cmdStr, m_current_send_cmd.currFeatureptr->cmdDesc, PMC_DESCRIBE_STRING_LENGTH);
-
 	}
 
 
