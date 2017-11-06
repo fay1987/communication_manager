@@ -35,12 +35,15 @@ namespace	PDT
 
 	enum ProtocolFrmType
 	{
-		Analog = 0 ,
-		Discrete,
-		Control,
-		SetValue,
-		SyncTime,
-		YcCommand,
+		Analog = 0 ,		//0遥调
+		Discrete,			//1遥信
+		Control,			//2遥控
+		SetValue,			//3遥调
+		SyncTime,			//4对时
+		YcCommand,			//5
+		ElecCommand,		//6电能数据
+		HarmonicCmd,		//7谐波
+		ParameterCmd,		//8参数
 		ConstantValue,
 		SOEData,
 		RecordsData,
@@ -52,12 +55,14 @@ namespace	PDT
 
 	enum ManualCommandType
 	{
-		CTRL_PRO_CONSTANTVALUE			=	0,		//设置定值
-		CTRL_PRO_YCCOMMAND				/*=	1*/,		//插入遥测命令
-		CTRL_PRO_CALLSOEDATA			/*=	2*/,		//召唤SOE数据
-		CTRL_PRO_CALLRECORDSDATA		/*= 3*/,		//召唤录波数据
-		CTRL_PRO_CALLELEC				/*= 4*/,		//召唤电能
-		CTRL_PRO_CALLHMC				/*=	5*/,		//召唤谐波
+		CTRL_PRO_CONSTANTVALUE			=	214,		//设置定值
+		CTRL_PRO_YCCOMMAND				/*=	215*/,		//插入遥测命令
+		CTRL_PRO_CALLSOEDATA			/*=	216*/,		//召唤SOE数据
+		CTRL_PRO_CALLRECORDSDATA		/*= 217*/,		//召唤录波数据
+		CTRL_PRO_CALLELEC				/*= 218*/,		//召唤电能
+		CTRL_PRO_CALLHMC				/*=	219*/,		//召唤谐波
+		CTRL_PRO_UDP					/*= 220*/,		//发送广播
+		CTRL_PRO_EDITPRAR				/*= 221*/		//修改下位机频段地址
 	};
 
 #define LOG_PROTOCOL											20000
@@ -164,6 +169,13 @@ namespace	PDT
 		hUChar		msg[PMC_RECV_BUFFER_SIZE];
 	}PMC_Recv_Msg,*PMC_Recv_Msg_ptr;
 
+	struct sendpara
+	{
+		char 	cmac[12];
+		short	frequency;
+		short	rtu;
+	};
+
 	class MODBUS_101_EXPORT	CProto_Modbus_101 : public PDT::CProtocol
 	{
 	public:
@@ -246,12 +258,15 @@ namespace	PDT
 		bool					getSOEData();
 		bool					getRecordsData();
 		void					resolve_analogTM(PMC_Feature_ptr p);		//解析基本电压电流数据
-		void					resolve_paradata(PMC_Feature_ptr p);		//解析参数数据
-
+		void					resolve_paradata(PMC_Feature_ptr p);
+		void					resolve_elecdata(PMC_Feature_ptr p);		//解析参数数据
+		void					resolve_harmdata(PMC_Feature_ptr p);
 		void					updateErrRate();
 		bool					sendYcCommand(void* p);
+		//bool					sendElecCommand(void* pFeature);
+		bool					sendUdp();
 		void					resolve_callYcCommand(PMC_Feature_ptr p);
-
+		bool					editpara(ctrl_pro_constantvalue* pCom);
 
 
 
@@ -281,8 +296,9 @@ namespace	PDT
 
 
 		//SOE
-		int		m_nSOENum;
-		char	m_buf[CTRL_COMMON_LEN];
+		short		m_nSOENum;	//SOE数据请求判断flag
+		short		m_nSumSOE;	//SOE总条数
+		
 		QVector<ctrl_pro_data_soe> m_nVector;
 
 		//录波
@@ -291,6 +307,8 @@ namespace	PDT
 		QVector<PMC_Feature_ptr>		m_record_feature;	//录波命令
 		char m_filePathName[256];
 
+
+		QVector<sendpara> m_vecPara;
 
 		hBool	m_bOk;
 

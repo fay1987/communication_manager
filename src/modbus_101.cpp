@@ -17,6 +17,7 @@
 #include "dac/dacctrl.h"
 #include <ace/OS.h>
 #include <QDir>
+
 using namespace PDT;
 
 //float sgval[6][3]={{1.0,12.5,3.0},{3.0,14.5,2.0},{2.0,15.0,5.0},{1.5,10.0,2.5},{1.2,10.4,3.5},{1.7,11.5,3.8}};
@@ -55,7 +56,7 @@ bool CProto_Modbus_101::open()
 	//初始化变量
 	memset( m_polling_feature,0,sizeof(PMC_Feature) * PMC_FEATURE_RECORD_MAXNUM );
 	memset( &m_current_send_cmd, 0, sizeof(PMC_Current_Send_Command) );
-	memset( m_buf,0, CTRL_COMMON_LEN);
+	//memset( m_buf,0, CTRL_COMMON_LEN);
 	clearRecvMsg();
 	//置规约初始状态为成功
 	m_protocolEvent = Succeeded;
@@ -392,6 +393,10 @@ void CProto_Modbus_101::findNextCommand()
 	{
 		getRecordsData();
 	}
+	else if (m_vecPara.size() > 0)
+	{
+		sendUdp();
+	}
 	//检查是否有控制命令
 	else if(hasAnyManualCommand()) 
 	{
@@ -698,19 +703,23 @@ bool CProto_Modbus_101::hasAnyManualCommand()
 	//{
 	//	return 1;
 	//}
+	
 	m_nflag ++;
 
-	if (m_nflag == 1 && m_route == 11)
+	if (m_nflag == 1 && m_route == 0)
 	{
 		unsigned char buf[512];
 		hInt32 headLen,dataLen;
 
 		headLen = sizeof( ctrl_head );
 		dataLen = sizeof( ctrl_pro_common );
-		ctrl_head*	pHead = (ctrl_head*)buf;
-		pHead->type = CTRL_PRO_CALLRECORDSDATA;	
+		ctrl_head*	pHead1 = (ctrl_head*)buf;
+		pHead1->type = CTRL_PRO_YCCOMMAND;
+		ctrl_pro_calldata* pData = ( ctrl_pro_calldata* )( buf + headLen/* + headLen*/);
+		//pData->groupNo = 0;
+		pData->ctrlNo = 1;
 
-		PDT::CString strCode = "grp12";
+		PDT::CString strCode = "grp0";
 		ctrl_pro_common common;
 		ACE_OS::strncpy(common.groupCode, strCode.c_str(), DAC_NAME_LEN);  //赋值commom编码
 		common.length = CTRL_COMMON_LEN;
@@ -720,6 +729,25 @@ bool CProto_Modbus_101::hasAnyManualCommand()
 		{
 			return 1;
 		}
+
+		//unsigned char buf[512];
+		//hInt32 headLen,dataLen;
+
+		//headLen = sizeof( ctrl_head );
+		//dataLen = sizeof( ctrl_pro_common );
+		//ctrl_head*	pHead = (ctrl_head*)buf;
+		//pHead->type = CTRL_PRO_CALLRECORDSDATA;//CTRL_PRO_CALLSOEDATA;	
+
+		//PDT::CString strCode = "grp12";
+		//ctrl_pro_common common;
+		//ACE_OS::strncpy(common.groupCode, strCode.c_str(), DAC_NAME_LEN);  //赋值commom编码
+		//common.length = CTRL_COMMON_LEN;
+		//ACE_OS::memcpy(common.cmdBuf,buf,CTRL_COMMON_LEN);
+		//CDacCtrl m_dacCtrl; 
+		//if ( !m_dacCtrl.commonCmd( &common ) ) 
+		//{
+		//	return 1;
+		//}
 	}
 
 
@@ -849,6 +877,20 @@ bool CProto_Modbus_101::hasAnyManualCommand()
 	{
 		ctrl_pro_calldata* pCommon = (ctrl_pro_calldata*)(tmpbuf+sizeof(ctrl_head));
 		ret = sendYcCommand(pCommon);
+	}
+	else if (pHead->type == CTRL_PRO_CALLELEC)
+	{
+		ctrl_pro_calldata* pCommon = (ctrl_pro_calldata*)(tmpbuf + sizeof(ctrl_head));
+		//ret = sendElecCommand(pCommon);
+	}
+	else if (pHead->type == CTRL_PRO_UDP)
+	{
+		ret = sendUdp();
+	}
+	else if (pHead->type == CTRL_PRO_EDITPRAR)
+	{
+		ctrl_pro_constantvalue* pCommon = (ctrl_pro_constantvalue*)(tmpbuf+sizeof(ctrl_head));
+		ret = editpara(pCommon);
 	}
 	else{;}
 
@@ -2219,8 +2261,8 @@ bool CProto_Modbus_101::make_set_parameter(void* pyk)
 bool PDT::CProto_Modbus_101::make_constantValue_read( ctrl_pro_constantvalue* pCom )
 {
 	if( pCom == NULL ) return false;
-	PMC_Feature_ptr p = findFeatureConstantValue(0x7A);
-	if(p == NULL) return false;
+	//PMC_Feature_ptr p = findFeatureConstantValue(CONSTANTVALUE_READ);
+	//if(p == NULL) return false;
 
 
 	//根据规约特征表中的配置寻找该帧的下一帧该发送的报文
@@ -2231,16 +2273,16 @@ bool PDT::CProto_Modbus_101::make_constantValue_read( ctrl_pro_constantvalue* pC
 	m_current_send_cmd.cmd[nLength++] = 0x71;	//
 
 	m_current_send_cmd.cmd[nLength++] = 0xF3;	//
-	m_current_send_cmd.cmd[nLength++] = m_remoteAddr;	// 子站站址低位
+	m_current_send_cmd.cmd[nLength++] = 0x01;	// 子站站址低位
 	m_current_send_cmd.cmd[nLength++] = 0x00;			// 子站站址高位
-	m_current_send_cmd.cmd[nLength++] = p->fc;			// 类型标识
+	m_current_send_cmd.cmd[nLength++] = 0x7A;			// 类型标识
 	m_current_send_cmd.cmd[nLength++] = 0x00;			// 结构限定词
 	m_current_send_cmd.cmd[nLength++] = 0x0D;			// 传送原因
 	m_current_send_cmd.cmd[nLength++] = 0x00;			// 
 	m_current_send_cmd.cmd[nLength++] = 0x01;			// 公共地址
 	m_current_send_cmd.cmd[nLength++] = 0x00;			// 
-	m_current_send_cmd.cmd[nLength++] = p->addrL;		// 信息体地址
-	m_current_send_cmd.cmd[nLength++] = p->addrH;		// 
+	m_current_send_cmd.cmd[nLength++] = 0x02;			// 信息体地址
+	m_current_send_cmd.cmd[nLength++] = 0x69;			// 
 	m_current_send_cmd.cmd[nLength++] = 0x00;			// 文件名
 	m_current_send_cmd.cmd[nLength++] = 0x00;			// 
 	m_current_send_cmd.cmd[nLength++] = 0x00;			// 节名
@@ -2266,9 +2308,8 @@ bool PDT::CProto_Modbus_101::make_constantValue_read( ctrl_pro_constantvalue* pC
 bool PDT::CProto_Modbus_101::make_constantValue_write( ctrl_pro_constantvalue* pCom )
 {
 	if( pCom == NULL ) return false;
-	PMC_Feature_ptr p = findFeatureConstantValue(0x7D);
-	if(p == NULL) return false;
-
+	//PMC_Feature_ptr p = findFeatureConstantValue(CONSTANTVALUE_WRITE);
+	//if(p == NULL) return false;
 
 	//根据规约特征表中的配置寻找该帧的下一帧该发送的报文
 	int nLength = 0;
@@ -2278,9 +2319,9 @@ bool PDT::CProto_Modbus_101::make_constantValue_write( ctrl_pro_constantvalue* p
 	m_current_send_cmd.cmd[nLength++] = 0x71;	//
 
 	m_current_send_cmd.cmd[nLength++] = 0xF3;	//
-	m_current_send_cmd.cmd[nLength++] = m_remoteAddr;	// 子站站址低位
+	m_current_send_cmd.cmd[nLength++] = 0x01;	// 子站站址低位
 	m_current_send_cmd.cmd[nLength++] = 0x00;			// 子站站址高位
-	m_current_send_cmd.cmd[nLength++] = p->fc;			// 类型标识
+	m_current_send_cmd.cmd[nLength++] = 0x7D;			// 类型标识
 	m_current_send_cmd.cmd[nLength++] = 0x00;			// 结构限定词
 	m_current_send_cmd.cmd[nLength++] = 0x0D;			// 传送原因
 	m_current_send_cmd.cmd[nLength++] = 0x00;			// 
@@ -2522,7 +2563,7 @@ void CProto_Modbus_101::setCmdinfoToBuf()
 void CProto_Modbus_101::mainRx()
 {
 	hUChar buff[PMC_RECV_BUFFER_SIZE];
-	hUInt32 rcvdataleng = length();//取得接收字节数
+	hInt32 rcvdataleng = length();//取得接收字节数
 	hUInt32 rcvleng;//实际获取的字节
 
 	rcvdataleng = rcvdataleng > ( PMC_RECV_BUFFER_SIZE - m_recv_msg.length )  ? ( PMC_RECV_BUFFER_SIZE - m_recv_msg.length ) : rcvdataleng ; 
@@ -2530,37 +2571,62 @@ void CProto_Modbus_101::mainRx()
 	rcvleng = get(buff, rcvdataleng);
 
 	
+	if (m_bTimeOut && m_isExclusive)
+	{
+		if (m_nSOENum <= 0 || m_record_feature.size() == 0)
+		{
+			m_isExclusive = false;
+		}
+	}
+
+
 	if (m_bTimeOut && !m_isExclusive)
 	{
 		CDateTime tNow = CDateTime::currentDateTime();
-		logprint(LOG_PROTOCOL+ m_route, "接收： -- %02d:%02d:%02d  %03d,  接收超时",tNow.hour(), tNow.minute(), tNow.second(), tNow.microsec()/1000);
 
 		if (!m_bOk)
 		{
-			addRecvErrFrmNum();
+			logprint(LOG_PROTOCOL+ m_route, "接收： -- %02d:%02d:%02d  %03d,  接收超时",tNow.hour(), tNow.minute(), tNow.second(), tNow.microsec()/1000);
+			//addRecvErrFrmNum(); 接收超时不属于错误帧
 			m_protocolEvent = TimeOut;
 		}
 		repotrAckRecv(true);//接收数据
 		m_bTimeOut = false;
+		logprint(LOG_PROTOCOL + m_route, "切换发送模式 ");
+
 		return;
 	}
 	else if (m_isExclusive && m_protocolEvent == Waitting && m_timeSet.time_out(m_rtimeout_id))
 	{
-		m_isExclusive = false;	//下发命令超时，直接跳出继续轮询数据。
+		
 		CDateTime tNow = CDateTime::currentDateTime();
 		logprint(LOG_PROTOCOL+ m_route, "接收： -- %02d:%02d:%02d  %03d,  接收超时",tNow.hour(), tNow.minute(), tNow.second(), tNow.microsec()/1000);
 
 		if (!m_bOk)
 		{
-			addRecvErrFrmNum();
+			//addRecvErrFrmNum();
 			m_protocolEvent = TimeOut;
 		}
 
-		if (m_nSOENum == 0 || m_record_feature.size() == 0)
+		if (m_nSOENum == 0)
+		{
+			m_nSOENum = -1;
+			m_isExclusive = false;	//下发命令超时，直接跳出继续轮询数据。
+		}
+
+		if (m_record_feature.size() == 0)
 		{
 			m_isExclusive = false;
-			m_bTimeOut = false;
 		}
+
+		//while(m_record_feature.size()>0)
+		//{
+		//	PMC_Feature*  pFeature  = m_record_feature.first(); 
+		//	delete pFeature;
+		//	pFeature = NULL;
+		//}
+		//m_record_feature.clear();
+
 		repotrAckRecv(true);//接收数据
 		return;
 	}
@@ -2634,7 +2700,7 @@ void CProto_Modbus_101::mainRx()
 		{
 			logprint(LOG_PROTOCOL + m_route, "接收错误：路径出错");	
 		}
-		//addRecvErrFrmNum();
+		addRecvErrFrmNum();
 		//repotrAckRecv(true);
 		
 	}
@@ -2643,7 +2709,7 @@ void CProto_Modbus_101::mainRx()
 int CProto_Modbus_101::handleData( hUChar *buff, hUInt16 nLen )
 {
 	putData(buff, nLen);
-	updateErrRate();
+	//updateErrRate();
 	return  paraDevProtocol();
 }
 
@@ -2678,6 +2744,7 @@ int CProto_Modbus_101::paraDevProtocol()
 		return RECEIVE_UNFINISHED;
 	}
 
+
 	//首先寻找报文头（判断首位是否地址码和长度）
 	if (!findHeadAndAdjustMsg())
 	{
@@ -2686,7 +2753,6 @@ int CProto_Modbus_101::paraDevProtocol()
 		
 	PMC_Feature_ptr pfeature = m_current_send_cmd.currFeatureptr;
 	//首先判断是否错误帧
-
 	bool bFlag = false;
 	hUChar ch;
 
@@ -2876,10 +2942,6 @@ int CProto_Modbus_101::paraDevProtocol()
 			{
 				resolve_analogTM(pfeature);		
 			}
-			else if (pfeature->cmdNo == 4)		//装置参数
-			{
-				resolve_paradata(pfeature);
-			}
 			else
 			{
 				resolve_analog(pfeature);
@@ -2899,6 +2961,15 @@ int CProto_Modbus_101::paraDevProtocol()
 		case SOEData:
 			resolve_SOEData(pfeature);
 			break;
+		case ElecCommand:
+			resolve_elecdata(pfeature);
+			break;
+		case HarmonicCmd:
+			resolve_harmdata(pfeature);
+			break;
+		case ParameterCmd:
+			resolve_paradata(pfeature);
+			break;
 		case RecordsData:
 		case RecordsData_SOE:
 		case RecordsData_YX:
@@ -2906,12 +2977,19 @@ int CProto_Modbus_101::paraDevProtocol()
 		case RecordsData_Record:
 			resolve_RecordsData(pfeature);
 			break;
-		case YcCommand:
-			{
-				resolve_callYcCommand(pfeature);
-				resolve_analog(pfeature);
-			}
-			break;
+		//case YcCommand:
+		//	{
+		//		resolve_callYcCommand(pfeature);
+		//		if (pfeature->cmdNo == 4)		//装置参数
+		//		{
+		//			resolve_paradata(pfeature);
+		//		}
+		//		else
+		//		{
+		//			resolve_analog(pfeature);
+		//		}
+		//	}
+		//	break;
 		default:
 			break;
 		}
@@ -3523,7 +3601,7 @@ int CProto_Modbus_101::resolve_constvalue(PMC_Feature_ptr pfeature)
 		// 数据处理
 		switch(pfeature->fc)
 		{
-		case 0x7A:	//读
+		case CONSTANTVALUE_READ:	//读
 			{
 #ifdef SUPPORT_MODBUS_TCP
 				hUChar *temp = m_recv_msg.msg + 6;
@@ -3535,7 +3613,30 @@ int CProto_Modbus_101::resolve_constvalue(PMC_Feature_ptr pfeature)
 				_ctrl_pro_constantvalue_ack_  ack;
 				memset(&ack,0,sizeof(_ctrl_pro_constantvalue_ack_));
 				ack.groupNo = m_grpno;
-				ack.ctrlType = pfeature->fc;
+				//ack.ctrlType = pfeature->fc;
+
+				DAC_YC *ycptr = NULL;
+				DAC_ROUTE *pRoute = m_commInf.route(m_route);
+				DAC_GROUP *pGroup = m_commInf.group( m_grpno); 
+				for (hUInt32 pointNo = 0;pointNo < pGroup->ycNum ; pointNo++)
+				{
+					ycptr = m_dataInf.ycPara( pRoute->group,pointNo);  //根据数据组号和遥测号找到遥测表
+					if (ycptr == NULL || !ycptr->valid)
+					{
+						ycptr = NULL;
+						continue;
+					}
+					if (ycptr->srcGroup >= 0)
+					{
+						break;
+					}
+					ycptr = NULL;
+				}
+
+				if (ycptr)
+				{
+					//ack.groupNo = ycptr->srcGroup;
+				}
 
 
 				if (nLen > CTRL_COMMON_LEN)
@@ -3547,7 +3648,7 @@ int CProto_Modbus_101::resolve_constvalue(PMC_Feature_ptr pfeature)
 				{
 					if (nLen > 20)
 					{
-						ACE_OS::memcpy(ack.ackBuf,temp+18,temp[18]);
+						ACE_OS::memcpy(ack.ackBuf,temp+19,temp[18]);
 						ack.length = temp[18];
 						ack.ackState = 0;
 					}
@@ -3560,7 +3661,7 @@ int CProto_Modbus_101::resolve_constvalue(PMC_Feature_ptr pfeature)
 				SetCVCmdAck(&ack);	
 			}
 			break;
-		case 0x7D:	//写
+		case CONSTANTVALUE_WRITE:	//写
 			{
 #ifdef SUPPORT_MODBUS_TCP
 				hUChar *temp = m_recv_msg.msg + 6;
@@ -3570,8 +3671,31 @@ int CProto_Modbus_101::resolve_constvalue(PMC_Feature_ptr pfeature)
 				_ctrl_pro_constantvalue_ack_  ack;
 				memset(&ack,0,sizeof(_ctrl_pro_constantvalue_ack_));
 				ack.groupNo = m_grpno;
-				ack.ctrlType = pfeature->fc;
+				//ack.ctrlType = pfeature->fc;
 				ack.length = 0;
+
+				DAC_YC *ycptr = NULL;
+				DAC_ROUTE *pRoute = m_commInf.route(m_route);
+				DAC_GROUP *pGroup = m_commInf.group( m_grpno); 
+				for (hUInt32 pointNo = 0;pointNo < pGroup->ycNum ; pointNo++)
+				{
+					ycptr = m_dataInf.ycPara( pRoute->group,pointNo);  //根据数据组号和遥测号找到遥测表
+					if (ycptr == NULL || !ycptr->valid)
+					{
+						ycptr = NULL;
+						continue;
+					}
+					if (ycptr->srcGroup >= 0)
+					{
+						break;
+					}
+					ycptr = NULL;
+				}
+
+				if (ycptr)
+				{
+					//ack.groupNo = ycptr->srcGroup;
+				}
 
 				if (temp[0] == 0x71 && temp[3] == 0x71 && temp[7] == pfeature->fc)
 				{
@@ -3609,7 +3733,7 @@ bool CProto_Modbus_101::getSOEData()
 		m_current_send_cmd.currFeatureptr->lengthL = 0x02;
 		m_current_send_cmd.currFeatureptr->frmType = SOEData;
 		CString strDesc = "获取SOE条数";
-		//m_current_send_cmd.currFeatureptr->cmdDesc = strDesc.c_str();
+		ACE_OS::strncpy(m_current_send_cmd.currFeatureptr->cmdDesc, strDesc.c_str(), PMC_DESCRIBE_STRING_LENGTH);
 
 		int i = 0;
 
@@ -3641,14 +3765,17 @@ bool CProto_Modbus_101::getSOEData()
 		m_current_send_cmd.currFeatureptr->lengthH = 0x00;
 		m_current_send_cmd.currFeatureptr->lengthL = 0x58;
 		m_current_send_cmd.currFeatureptr->frmType = SOEData;
+		
 
 		int nNum = m_nSOENum < 8 ?  m_nSOENum : 8;
+		m_current_send_cmd.currFeatureptr->fcLength = nNum;
 
 		QString strDesc = QString("获取第 %1 条 -- 第 %2 条SOE数据")
 						.arg(m_nSOENum - nNum)
-						.arg(m_nSOENum);
+						.arg(m_nSOENum -1);
 	
-		QByteArray ba = strDesc.toLatin1();  
+		QByteArray ba = strDesc.toLocal8Bit();  
+		ACE_OS::strncpy(m_current_send_cmd.currFeatureptr->cmdDesc, ba.data(), PMC_DESCRIBE_STRING_LENGTH);
 
 
 		int i = 0;
@@ -3670,11 +3797,6 @@ bool CProto_Modbus_101::getSOEData()
 		m_nSOENum -= nNum;
 	}
 
-	//if (m_nSOENum == 0)
-	//{
-	//	m_isExclusive = false;
-	//	m_bTimeOut = false;
-	//}
 	return true;
 }
 
@@ -3691,17 +3813,22 @@ void CProto_Modbus_101::resolve_SOEData(PMC_Feature_ptr p)
 	
 	if (m_nSOENum < 0 )		//条数
 	{
-		m_nSOENum = (int)MakeLong( MakeWord(temp[4],temp[3]), MakeWord(temp[6],temp[5]));
-		
-		hUInt32 headLen = sizeof( ctrl_head );
-		ctrl_head chead;
-		chead.type = m_nSOENum;
-		memcpy(m_buf, (char*)&chead, headLen);
+		m_nSOENum = (short) MakeWord(temp[4],temp[3]);
+		m_nSumSOE = m_nSOENum;
+
+		if (m_nSumSOE <= 0)
+		{
+			m_nSOENum = -1;
+
+			char buf[CTRL_COMMON_LEN];
+			memcpy(buf, &m_nSOENum, sizeof(short));
+			setCtrlCmdAck(buf, sizeof(short));
+		}
+
 	}
 	else	//数据
 	{
-		
-		int leng = temp[2] / 22;
+		int leng = p->fcLength;
 		for (int i = 0; i < leng; i++)
 		{
 			ctrl_pro_data_soe sData;
@@ -3712,6 +3839,7 @@ void CProto_Modbus_101::resolve_SOEData(PMC_Feature_ptr p)
 			sData.nAction3 = MakeLong( MakeWord(temp[14+i*22],temp[13+i*22]),MakeWord(temp[16+i*22],temp[15+i*22]));
 			
 			CDateTime datetime;
+
 			datetime.second((float)MakeWord(temp[18+i*22],temp[17+i*22]));
 			datetime.hour(temp[19+i*22]);
 			datetime.minute(temp[20+i*22]);
@@ -3720,51 +3848,90 @@ void CProto_Modbus_101::resolve_SOEData(PMC_Feature_ptr p)
 			datetime.year((float)MakeWord(temp[24+i*22],temp[23+i*22]));
 
 			sData.datetime = datetime.toTimeT();
-
+			
 			m_nVector.append(sData);
 		}
 		
-		if (m_nSOENum <= 0)
 		{
-			int copyLen = sizeof(ctrl_head) + 8 * sizeof(ctrl_pro_data_soe);
-			if ( copyLen >= CTRL_COMMON_LEN ) copyLen = CTRL_COMMON_LEN;
+			short cState = m_nSumSOE;
+			char buf[CTRL_COMMON_LEN];
+			memset(buf, 0, CTRL_COMMON_LEN);
 
-			ctrl_pro_common_ack commonAck;
-			commonAck.groupNo = m_grpno;
-			commonAck.length = copyLen;
+			////add by yaoff for test on [2017/7/24 14:49:39]
+			//
+			//	char filePathName[256];
+			//	FILE* fp = NULL;
+			//	ACE_OS::snprintf(filePathName,256,"%s/SOE/SOE.pdt",ACE_OS::getenv (SYS_ENV_VAR));
+			//	if( ACE_OS::filesize(filePathName) > BLOG_FILE_LEN )	
+			//		fp = ACE_OS::fopen(filePathName,"w+");  
+			//	else	
+			//		fp = ACE_OS::fopen(filePathName,"a+");
+			//
+			////add end. [2017/7/24 14:49:39]
 
-			hInt32 headLen = sizeof( ctrl_head );
-			hInt32 dataLen = sizeof( ctrl_pro_common_ack);
-			unsigned char buf[512];
-			ctrl_head*	pHead = (ctrl_head*)buf;
-			pHead->type = CTRL_PRO_COMMON_ACK;
-			ctrl_pro_common_ack* pData = (ctrl_pro_common_ack*)(buf + headLen);
-
-			while (true)
+			while (m_nVector.size() > 0)
 			{
 				int nLen = 8;
-				if (m_nVector.size() < nLen)
-				{
-					nLen = m_nVector.size();
-				}
-				if (nLen == 0)
-				{
-					break;
-				}
 				int nSize = m_nVector.size();
+				if (nSize <= nLen)
+				{
+					nLen = nSize;
+				}
+				if (m_nSOENum == 0)
+				{
+					cState = 300;
+				}
+
+				memcpy(buf, &cState, sizeof(short));
+				
+				//char head[1024];
+
 				int nNo = 0;
 				for(int i = nSize-1; i >= nSize-nLen; i--)
 				{
-					ctrl_pro_data_soe* pData = &(m_nVector[i]);
-					memcpy(m_buf + sizeof(ctrl_head) + (nNo++)*sizeof(ctrl_pro_data_soe), pData, sizeof(ctrl_pro_data_soe));
+					memcpy(buf + sizeof(short) + (nNo++)*sizeof(ctrl_pro_data_soe), &(m_nVector[i]), sizeof(ctrl_pro_data_soe));
 					m_nVector.remove(i);
 				}
 				
-				ACE_OS::memcpy(commonAck.ackBuf, m_buf, copyLen);
-				ACE_OS::memcpy(pData,&commonAck,dataLen );
-				m_ctrlInf.addAck(CTRL_PRO_COMMON_ACK,buf, headLen + dataLen, commonAck.groupNo);
-			}
+				//int copyLen = sizeof(short) + (nNo)*sizeof(ctrl_pro_data_soe);
 
+				////add by yaoff for test on [2017/7/24 14:49:39]
+				//{
+				//	short cst = 0;
+				//	memcpy(&cst, buf, sizeof(short));
+
+				//	QString str = QString("state: %1 ").arg(cst);
+				//	int nnn = sizeof(short);
+				//	int nf = copyLen/sizeof(ctrl_pro_data_soe);
+				//	while(nf > 0)
+				//	{
+				//		ctrl_pro_data_soe pYk;
+				//		memcpy((&pYk), (buf + nnn), sizeof(ctrl_pro_data_soe));
+				//		QDateTime tt = QDateTime::fromTime_t(pYk.datetime);
+				//		QString str1 = QString("SOE--- ErrorType:%1  Action1:%2  Action2:%3  Action3:%4  datetime: %5\n")
+				//			.arg(pYk.nErrorType)
+				//			.arg(pYk.nAction1)
+				//			.arg(pYk.nAction2)
+				//			.arg(pYk.nAction3)
+				//			.arg(tt.toString("yy-MM-dd hh:mm:ss"));
+				//		str += str1;
+				//		nnn += sizeof(ctrl_pro_data_soe);
+				//		nf--;
+				//	}
+				//	ACE_OS::sprintf(head,"%s", str.toStdString().c_str());	
+				//	if ( fp != NULL ) 
+				//		ACE_OS::fprintf(fp,"%s",head);
+				//}
+				////add end. [2017/7/24 14:49:39]
+
+				setCtrlCmdAck(buf, CTRL_COMMON_LEN);
+			}
+			//if ( fp != NULL ) ACE_OS::fclose(fp);
+
+		}
+
+		if (m_nSOENum == 0)
+		{
 			m_nSOENum = -1;
 		}
 	}
@@ -3776,9 +3943,9 @@ bool CProto_Modbus_101::getRecordsData()
 	if (m_nRecordsNum < 0)
 	{
 		// 重新请求录波数据前，需要先删除旧的数据。
-		char cfilePathName[256];
+		//char cfilePathName[256];
 		//ACE_OS::snprintf(cfilePathName,256,"%s/Record/",ACE_OS::getenv (SYS_ENV_VAR));
-		QString strPath = QString("%1/Record/").arg( ACE_OS::getenv(SYS_ENV_VAR) );
+		QString strPath = QString("%1/cmddata/record/").arg( ACE_OS::getenv(SYS_ENV_VAR) );
 		
 		QDir d(strPath);
 		d.setFilter(QDir::Files);
@@ -3788,10 +3955,6 @@ bool CProto_Modbus_101::getRecordsData()
 		{
 			d.remove(d[i]);
 		}
-			
-
-		//ACE_OS::rmdir(cfilePathName);
-		//ACE_OS::mkdir(cfilePathName);
 
 		m_current_send_cmd.currFeatureptr = m_pcmd;
 		m_current_send_cmd.currFeatureptr->isAck = true;
@@ -3802,8 +3965,8 @@ bool CProto_Modbus_101::getRecordsData()
 		m_current_send_cmd.currFeatureptr->lengthH = 0x00;
 		m_current_send_cmd.currFeatureptr->lengthL = 0x02;
 		m_current_send_cmd.currFeatureptr->frmType = RecordsData;
-		CString strDesc = "获取录波条数";
-		//m_current_send_cmd.currFeatureptr->cmdDesc = strDesc.c_str();
+		QString strDesc = "获取录波条数";
+		ACE_OS::strncpy(m_current_send_cmd.currFeatureptr->cmdDesc, strDesc.toStdString().c_str(), PMC_DESCRIBE_STRING_LENGTH);
 
 		int i = 0;
 
@@ -3820,13 +3983,11 @@ bool CProto_Modbus_101::getRecordsData()
 		m_current_send_cmd.cmd[i++] = LOBYTE(crc);
 		m_current_send_cmd.length = i;
 
-		ACE_OS::strncpy(m_current_send_cmd.cmdStr, strDesc.c_str(), PMC_DESCRIBE_STRING_LENGTH);
+		ACE_OS::strncpy(m_current_send_cmd.cmdStr, m_current_send_cmd.currFeatureptr->cmdDesc, PMC_DESCRIBE_STRING_LENGTH);
 
 	}
 	else
 	{
-
-
 		if (m_record_feature.size() > 0)
 		{
 			PMC_Feature*  pFeature  = m_record_feature.first(); 
@@ -3839,9 +4000,11 @@ bool CProto_Modbus_101::getRecordsData()
  			m_pcmd->addrL = pFeature->addrL;
  			m_pcmd->lengthH = pFeature->lengthH;
  			m_pcmd->lengthL = pFeature->lengthL;
- 			m_pcmd->frmType = pFeature->frmType;	
-			m_current_send_cmd.currFeatureptr = m_pcmd;
+ 			m_pcmd->frmType = pFeature->frmType;
+			ACE_OS::strncpy(m_pcmd->cmdDesc, pFeature->cmdDesc, PMC_DESCRIBE_STRING_LENGTH);
 
+			m_current_send_cmd.currFeatureptr = m_pcmd;
+			ACE_OS::strncpy(m_current_send_cmd.currFeatureptr->cmdDesc,m_pcmd->cmdDesc, PMC_DESCRIBE_STRING_LENGTH);
 
 			int i = 0;
 
@@ -3858,7 +4021,6 @@ bool CProto_Modbus_101::getRecordsData()
 			m_current_send_cmd.cmd[i++] = LOBYTE(crc);
 			m_current_send_cmd.length = i;
 
-			//PMC_Feature* pFeature = m_record_feature.first();
 			delete pFeature;
 			pFeature = NULL;
 			m_record_feature.pop_front();
@@ -3866,15 +4028,13 @@ bool CProto_Modbus_101::getRecordsData()
 
 		if (m_record_feature.size() == 0)
 		{
-			//m_isExclusive = false;
-			//m_bTimeOut = false;
 			m_nRecordsNum = -1;
 		}
 		//if (m_record_feature.size() == 0)
 		//{
 		//	m_nRecordsNum = -1;
 		//}
-		//ACE_OS::strncpy(m_current_send_cmd.cmdStr, strDesc.c_str(), PMC_DESCRIBE_STRING_LENGTH);
+		ACE_OS::strncpy(m_current_send_cmd.cmdStr, m_current_send_cmd.currFeatureptr->cmdDesc, PMC_DESCRIBE_STRING_LENGTH);
 
 	}
 
@@ -3894,7 +4054,12 @@ void CProto_Modbus_101::resolve_RecordsData(PMC_Feature_ptr p)
 
 	if (p->frmType == RecordsData)
 	{
-		m_nRecordsNum = (int)MakeLong( MakeWord(temp[4],temp[3]), MakeWord(temp[6],temp[5]));
+		m_nRecordsNum = (int) MakeWord(temp[4],temp[3]);
+
+		char buf[CTRL_COMMON_LEN];
+		memset(buf, 0, CTRL_COMMON_LEN);
+		memcpy(buf, &m_nRecordsNum, sizeof(int));
+		setCtrlCmdAck(buf, CTRL_COMMON_LEN);
 
 		for (int i = m_record_feature.size()-1; i >=0 ; i--)
 		{
@@ -3920,6 +4085,8 @@ void CProto_Modbus_101::resolve_RecordsData(PMC_Feature_ptr p)
 				pFeature1->lengthH = 0x00;
 				pFeature1->lengthL = 0x0B;
 				pFeature1->frmType = RecordsData_SOE;
+				QString strDesc = "RecordsData_SOE";
+				ACE_OS::strncpy(pFeature1->cmdDesc, strDesc.toStdString().c_str(), PMC_DESCRIBE_STRING_LENGTH);
 
 				m_record_feature.push_back(pFeature1);
 
@@ -3933,6 +4100,8 @@ void CProto_Modbus_101::resolve_RecordsData(PMC_Feature_ptr p)
 				pFeature2->lengthH = 0x00;
 				pFeature2->lengthL = 0x04;
 				pFeature2->frmType = RecordsData_YX;
+				strDesc = "RecordsData_YX";
+				ACE_OS::strncpy(pFeature2->cmdDesc, strDesc.toStdString().c_str(), PMC_DESCRIBE_STRING_LENGTH);
 
 				m_record_feature.push_back(pFeature2);
 
@@ -3946,6 +4115,8 @@ void CProto_Modbus_101::resolve_RecordsData(PMC_Feature_ptr p)
 				pFeature3->lengthH = 0x00;
 				pFeature3->lengthL = 0x35;
 				pFeature3->frmType = RecordsData_Para;
+				strDesc = "RecordsData_Para";
+				ACE_OS::strncpy(pFeature3->cmdDesc, strDesc.toStdString().c_str(), PMC_DESCRIBE_STRING_LENGTH);
 
 				m_record_feature.push_back(pFeature3);
 
@@ -3965,6 +4136,8 @@ void CProto_Modbus_101::resolve_RecordsData(PMC_Feature_ptr p)
 						pFeature4->lengthH = HIBYTE(tmp_lenth);
 						pFeature4->lengthL = LOBYTE(tmp_lenth);
 						pFeature4->frmType = RecordsData_Record;
+						strDesc = QString("RecordsData_Record%1_%2").arg(m).arg(n);
+						ACE_OS::strncpy(pFeature4->cmdDesc, strDesc.toStdString().c_str(), PMC_DESCRIBE_STRING_LENGTH);
 						m_record_feature.push_back(pFeature4);
 					}
 				}
@@ -3978,7 +4151,7 @@ void CProto_Modbus_101::resolve_RecordsData(PMC_Feature_ptr p)
 	
 	if (p->frmType == RecordsData_SOE)
 	{
-		ACE_OS::snprintf(m_filePathName,256,"%s/Record/%d.pdt",ACE_OS::getenv (SYS_ENV_VAR),p->cmdNo);
+		ACE_OS::snprintf(m_filePathName,256,"%s/cmddata/record/%d.pdt",ACE_OS::getenv (SYS_ENV_VAR),p->cmdNo);
 	}
 	
 	FILE* fp = NULL;
@@ -3991,7 +4164,6 @@ void CProto_Modbus_101::resolve_RecordsData(PMC_Feature_ptr p)
 	if(fp == NULL)
 	{
 		printf("打开文件 %s 失败\n",m_filePathName);
-		exit(0);
 		return;
 	}
 	
@@ -4003,88 +4175,76 @@ void CProto_Modbus_101::resolve_RecordsData(PMC_Feature_ptr p)
 	{
 	case RecordsData_SOE:
 		{
-			//ctrl_pro_data_soe sData;
-			//sData.nErrorType = (float)MakeWord(temp[4],temp[3]);
-			//sData.nAction1 = MakeLong( MakeWord(temp[6],temp[5]),MakeWord(temp[8],temp[7]));
-			//sData.nAction2 = MakeLong( MakeWord(temp[10],temp[9]),MakeWord(temp[12],temp[11]));
-			//sData.nAction3 = MakeLong( MakeWord(temp[14],temp[13]),MakeWord(temp[16],temp[15]));
-
-			//CDateTime datetime;
-			//datetime.second((float)MakeWord(temp[18],temp[17]));
-			//datetime.hour(temp[19]);
-			//datetime.minute(temp[20]);
-			//datetime.month(temp[21]);
-			//datetime.day(temp[22]);
-			//datetime.year((float)MakeWord(temp[24],temp[23]));
-			//sData.datetime = datetime.toTimeT();
-
-			ACE_OS::sprintf(head,"\nSOE\n ErrorType:%d \n Action1:%d \n Action2:%d \n Action3:%d \n datetime: %04d-%02d-%02d %02d:%02d:%02d",
-				(float)MakeWord(temp[4],temp[3]),			//nErrorType
+			ACE_OS::sprintf(head,"{\"groupno\":\"%d\",", m_grpno);
+			ACE_OS::fprintf(fp,"%s",head);
+			ACE_OS::sprintf(head,"\"SOE\":{\"ErrorType\":\"%d\",\"Action1\":\"%d\",\"Action2\":\"%d\",\"Action3\":\"%d\",\"datetime\":\"%04d-%02d-%02d %02d:%02d:%02d %d\"},",
+				(int)MakeWord(temp[4],temp[3]),			//nErrorType
 				MakeLong( MakeWord(temp[6],temp[5]),MakeWord(temp[8],temp[7])),		//nAction1
 				MakeLong( MakeWord(temp[10],temp[9]),MakeWord(temp[12],temp[11])),	//nAction2
 				MakeLong( MakeWord(temp[14],temp[13]),MakeWord(temp[16],temp[15])), //nAction3
-				(float)MakeWord(temp[24],temp[23]),	//年
+				(int)MakeWord(temp[24],temp[23]),	//年
 				temp[21],							//月
 				temp[22],							//日
 				temp[19],							//时
 				temp[20],							//分
-				(float)MakeWord(temp[18],temp[17]) );	//秒
+				(int)MakeWord(temp[18],temp[17])/1000,
+				(int)MakeWord(temp[18],temp[17])%1000	);	//秒
 
-			if ( fp != NULL ) 
-				ACE_OS::fprintf(fp,"%s\n",head);
+			
+			ACE_OS::fprintf(fp,"%s",head);
 		}
 		break;
 	case RecordsData_YX:
 		{
-			ACE_OS::sprintf(head,"\nYX\n ");
-			if ( fp != NULL ) 
-				ACE_OS::fprintf(fp,"%s",head);
+			ACE_OS::fprintf(fp,"\"YX\":{");
+
 
 			bitset<16> bite;
+			int nIndex = 0;
+			
 			for(int i = 0; i < 4; i++)
 			{
 				bite = (temp[3+i*2]*256 + temp[4+i*2]);
 
 				for(int j = 0; j < 16 ; j++)
 				{
-					ACE_OS::fprintf(fp," %d ", bite.test(j));
-					//yxval.val =  bite.test(j); 
+					DAC_YX* yxptr = m_dataInf.yxPara(m_grpno, nIndex++);
+					ACE_OS::fprintf(fp,"\"%s\":\"%d\",", yxptr->name, bite.test(j));
 				}
 			}
-
- 			if ( fp != NULL ) 
- 				ACE_OS::fprintf(fp,"\n");
+ 			
+ 			ACE_OS::fprintf(fp,"},");
 
 		}
 		break;
 	case RecordsData_Para:
 		{
-
-			ACE_OS::sprintf(head,"\nPARA\n ");
-			if ( fp != NULL ) 
-				ACE_OS::fprintf(fp,"%s",head);
+			ACE_OS::fprintf(fp,"\"PARA\":[\"1\":{");
 
 			bitset<16> bite;
+			int nIndex = 64;
 			for(int i = 0; i < 1; i++)
 			{
 				bite = (temp[3+i*2]*256 + temp[4+i*2]);
 
 				for(int j = 0; j < 16 ; j++)
 				{
-					ACE_OS::fprintf(fp," %d ", bite.test(j));
+					DAC_YX* yxptr = m_dataInf.yxPara(m_grpno, nIndex++);
+					ACE_OS::fprintf(fp,"\"%s\":\"%d\",", yxptr->name, bite.test(j));
 				}
 			}
-			if ( fp != NULL ) 
-				ACE_OS::fprintf(fp,"\n");
+
+			ACE_OS::fprintf(fp,"},\"2\":{");
 
 			int leng = temp[2];
+			nIndex = 259;
 			for(int i = 0; i < (leng/2) ; i++)
 			{
-				ACE_OS::fprintf(fp," %02X ", (float)MakeWord(temp[4+i*2],temp[3+i*2]));			
+				DAC_YC* ycptr = m_dataInf.ycPara(m_grpno, nIndex++);
+				ACE_OS::fprintf(fp,"\"%s\":%.2f,",ycptr->name, (float)MakeWord(temp[4+i*2],temp[3+i*2]));			
 			}
 
-			if ( fp != NULL ) 
-				ACE_OS::fprintf(fp,"\n");
+			ACE_OS::fprintf(fp,"}],");
 
 		}
 		break;
@@ -4092,29 +4252,33 @@ void CProto_Modbus_101::resolve_RecordsData(PMC_Feature_ptr p)
 		{
 			if (p->cmdNo == 0)
 			{
-				ACE_OS::sprintf(head,"\nRECORD\n ");
-				if ( fp != NULL ) 
-					ACE_OS::fprintf(fp,"%s",head);
+				ACE_OS::fprintf(fp,"\"RECORD\":[");
 			}
 
-			if ((p->cmdNo +1) % RECORD_CMD_NUM == 0)
-			{
-				if ( fp != NULL ) 
-					ACE_OS::fprintf(fp,"\n\n");
-			}
 			int leng = temp[2];
-			for(int i = 0; i < leng/*(leng/2)*/ ; i++)
+			int cc = temp[3]>>4;
+			int nn = temp[3]&0x0F;
+
+			if (nn == 0)
 			{
-				ACE_OS::fprintf(fp," %02X ",temp[3+i]);	
-				//ACE_OS::fprintf(fp,"  %02X",(float)MakeWord(temp[4+i*2],temp[3+i*2]));				
+				ACE_OS::fprintf(fp,"{");
+			}
+			ACE_OS::sprintf(head, "\"%d-%d\": \"", cc, nn);
+			ACE_OS::fprintf(fp,"%s",head);
+			for(int i = 0; i < ((leng-3)/2) ; i++)
+			{
+				ACE_OS::fprintf(fp,"%d,",(short)MakeWord(temp[7+i*2],temp[6+i*2]));
 			}
 
-			if ( fp != NULL ) 
-				ACE_OS::fprintf(fp,"\n");
-			//if (p->cmdNo == (RECORD_CHANEL_NUM*RECORD_CMD_NUM -1))
-			//{
-			//	m_nRecordsNum--;
-			//}
+			ACE_OS::fprintf(fp,"\",");
+			if (nn == 4)
+			{
+				ACE_OS::fprintf(fp,"},");
+				if (cc == 5)
+				{
+					ACE_OS::fprintf(fp,"]}");
+				}
+			}
 		}
 		break;
 	default:
@@ -4129,6 +4293,88 @@ void CProto_Modbus_101::resolve_RecordsData(PMC_Feature_ptr p)
 
 void CProto_Modbus_101::resolve_analogTM(PMC_Feature_ptr p)
 {
+	if(p == NULL) return;
+
+#ifdef SUPPORT_MODBUS_TCP
+	hUChar *temp = m_recv_msg.msg + 6;
+#else
+	hUChar *temp = m_recv_msg.msg ;
+#endif
+
+	int ycno = p->startNo;
+	DAC_YC_DATA ycval;
+	ycval.quality = 0;
+	ycval.updateTime = CDateTime::currentDateTime().toTimeT();
+
+	int	nRouteNo = p->routeNo;
+
+	// 电压电流
+	for(int i = 0; i < 6 ; i++)
+	{
+		ycval.val = (float)MakeWord(temp[4+i*2],temp[3+i*2]);
+		m_dataInf.setYc(nRouteNo, ycno, ycval);
+		ycno++;
+	}
+
+	//有功功率 无功功率 
+	for(int i = 0; i < 8; i++)
+	{
+		ycval.val = (float)(short)MakeWord(temp[16+i*2],temp[15+i*2]);
+		m_dataInf.setYc(nRouteNo, ycno, ycval);
+		ycno++;
+	}
+
+	// 电源频率
+	ycval.val = (float)MakeWord(temp[32],temp[31]);
+	m_dataInf.setYc(nRouteNo, ycno, ycval);
+	ycno++;
+
+	//功率因数 温度
+	for(int i = 0; i < 7 ; i++)
+	{
+		ycval.val = (float)(short)MakeWord(temp[34+i*2],temp[33+i*2]);
+		m_dataInf.setYc(nRouteNo, ycno, ycval);
+		ycno++;
+	}
+
+
+	//遥信
+	DAC_YX_DATA yxval;
+
+	int yxno = 0;
+	yxval.quality = 0;
+	yxval.updateTime = CDateTime::currentDateTime().toTimeT();
+
+	bitset<16> bite;
+	for(int i = 0; i < 4; i++)
+	{
+		bite = (temp[47+i*2]*256 + temp[48+i*2]);
+
+		for(int j = 0; j < 16 ; j++)
+		{
+			yxval.val =  bite.test(j); 
+			m_dataInf.setYx(nRouteNo, yxno, yxval);
+			yxno++;
+		}
+	}
+
+	//总用电量电能
+	for(int i = 0; i < 5; i++)
+	{
+		ycval.val = (float)MakeLong(MakeWord(temp[58+i*4],temp[57+i*4]), MakeWord(temp[56+i*4],temp[55+i*4]));
+		m_dataInf.setYc(nRouteNo, ycno, ycval);
+		ycno++;
+	}
+	
+	//谐波
+	for(int i = 0; i < 6 ; i++)
+	{
+		ycval.val = (float)MakeWord(temp[76+i*2],temp[75+i*2]);
+		m_dataInf.setYc(nRouteNo, ycno, ycval);
+		ycno++;
+	}
+
+	/*  7月2日前测点
 	if(p == NULL) return;
 
 #ifdef SUPPORT_MODBUS_TCP
@@ -4181,7 +4427,7 @@ void CProto_Modbus_101::resolve_analogTM(PMC_Feature_ptr p)
 	// 电源频率 功率因数 温度
 	for(int i = 0; i < 8 ; i++)
 	{
-		ycval.val = (float)MakeWord(temp[46+i*2],temp[45+i*2]);
+		ycval.val = (float)(short)MakeWord(temp[46+i*2],temp[45+i*2]);
 		m_dataInf.setYc(nRouteNo, ycno, ycval);
 		ycno++;
 	}
@@ -4206,13 +4452,179 @@ void CProto_Modbus_101::resolve_analogTM(PMC_Feature_ptr p)
 			yxno++;
 		}
 	}
+*/
+}
+
+bool PDT::CProto_Modbus_101::sendUdp()
+{  
+	char buff[1024];
+	char fpath[256]; 
+	ACE_OS::snprintf(fpath,256,"%s/bin/web/tmp/senddev_para.csv",ACE_OS::getenv (SYS_ENV_VAR));
+
+	FILE* fp = ACE_OS::fopen(fpath,"r+");  
+
+	if(fp == NULL)
+	{
+		printf("打开文件 %s 失败\n",fpath);
+		return FALSE;
+	}
+
+	//读数据，加入vector
+	QString str;
+	QStringList ll;
+	bool ok;
+	fgets(buff, sizeof(buff), fp);
+	while(fgets(buff, sizeof(buff), fp))
+	{
+		str = buff;
+		ll = str.split(",");
+		str = ll.at(0);
+		if (ll.count() < 3 || str.length()< 12 || str.toULong() <= 0)
+		{
+			ll.clear();
+			continue;
+		}
+		sendpara para;
+		memset(para.cmac, 0, 16);		
+		memcpy(para.cmac, str.toStdString().c_str(), str.length());
+		para.rtu = ll.at(1).toUInt();
+		para.frequency = ll.at(2).toUInt();
+		m_vecPara.push_front(para);
+		ll.clear();
+	}
+
+
+
+	//char mac[10];
+	int i = 0;
+	if (m_vecPara.size() > 0)
+	{
+		sendpara para = m_vecPara.last();
+		//sprintf(mac, "%.10lX",para.lmac);
+		str = QString("%1").arg(para.cmac);
+
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = 0x10;
+		m_current_send_cmd.cmd[i++] = 0x05;
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = 0x0D;
+		m_current_send_cmd.cmd[i++] = 0x1A;
+
+		m_current_send_cmd.cmd[i++] = HiByte(str.mid(0,4).toUInt(0,16));
+		m_current_send_cmd.cmd[i++] = LoByte(str.mid(0,4).toUInt(0,16));
+		m_current_send_cmd.cmd[i++] = HiByte(str.mid(4,4).toUInt(0,16));
+		m_current_send_cmd.cmd[i++] = LoByte(str.mid(4,4).toUInt(0,16));		
+		m_current_send_cmd.cmd[i++] = HiByte(str.mid(8,4).toUInt(0,16));
+		m_current_send_cmd.cmd[i++] = LoByte(str.mid(8,4).toUInt(0,16));
+
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = 0x02;
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = para.frequency;
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = 0x1A;
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = 0x01;
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = para.rtu;
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = 0x00;
+		m_current_send_cmd.cmd[i++] = 0x00;
+
+		hUInt16 crc = CToolFunctions::modbusCRC(m_current_send_cmd.cmd, i);
+
+		m_current_send_cmd.cmd[i++] = HIBYTE(crc);
+		m_current_send_cmd.cmd[i++] = LOBYTE(crc);
+		m_current_send_cmd.length = i;
+
+		m_vecPara.pop_back();
+		//ACE_OS::strncpy(m_current_send_cmd.cmdStr, m_current_send_cmd.currFeatureptr->cmdDesc, PMC_DESCRIBE_STRING_LENGTH);
+
+	}
+
+
+	return TRUE;
 
 }
 
 
+bool PDT::CProto_Modbus_101::editpara(ctrl_pro_constantvalue* pCom)
+{  
+	if (pCom == NULL)
+	{
+		return false;
+	}
 
-void CProto_Modbus_101::resolve_paradata(PMC_Feature_ptr p)
-{
+	int i = 0;
+
+	sendpara para = m_vecPara.last();
+	
+	QString qstr = QString("%s").arg(pCom->cmdBuf);
+	QStringList ll = qstr.split(":");
+	bool bOk;
+	QString str = ll.at(0).trimmed();
+
+	m_current_send_cmd.cmd[i++] = m_remoteAddr;
+	m_current_send_cmd.cmd[i++] = 0x10;
+	m_current_send_cmd.cmd[i++] = 0x05;
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = 0x0D;
+	m_current_send_cmd.cmd[i++] = 0x1A;
+
+	m_current_send_cmd.cmd[i++] = HiByte(str.mid(0,4).toUInt(0,16));
+	m_current_send_cmd.cmd[i++] = LoByte(str.mid(0,4).toUInt(0,16));
+	m_current_send_cmd.cmd[i++] = HiByte(str.mid(4,4).toUInt(0,16));
+	m_current_send_cmd.cmd[i++] = LoByte(str.mid(4,4).toUInt(0,16));		
+	m_current_send_cmd.cmd[i++] = HiByte(str.mid(8,4).toUInt(0,16));
+	m_current_send_cmd.cmd[i++] = LoByte(str.mid(8,4).toUInt(0,16));
+
+
+
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = 0x02;
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = ll.at(1).toInt(&bOk, 16);
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = 0x1A;
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = 0x01;
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = ll.at(2).toInt(&bOk, 16);;
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = 0x00;
+	m_current_send_cmd.cmd[i++] = 0x00;
+
+	hUInt16 crc = CToolFunctions::modbusCRC(m_current_send_cmd.cmd, i);
+
+	m_current_send_cmd.cmd[i++] = HIBYTE(crc);
+	m_current_send_cmd.cmd[i++] = LOBYTE(crc);
+	m_current_send_cmd.length = i;
+
+	m_vecPara.pop_back();
+
+	return TRUE;
+
+}
+
+
+void PDT::CProto_Modbus_101::resolve_elecdata( PMC_Feature_ptr p )
+{/*
 	if(p == NULL) return;
 
 #ifdef SUPPORT_MODBUS_TCP
@@ -4221,30 +4633,177 @@ void CProto_Modbus_101::resolve_paradata(PMC_Feature_ptr p)
 	hUChar *temp = m_recv_msg.msg ;
 #endif
 
+	int leng = temp[2];//遥测个数
+	int ntype = 0;
+
+	char fpath[256]; 
+	ACE_OS::snprintf(fpath,256,"%s/cmddata/elec.pdt",ACE_OS::getenv (SYS_ENV_VAR));
+
+	FILE* fp = NULL;
+
+	if( ACE_OS::filesize(fpath) > BLOG_FILE_LEN )	
+		fp = ACE_OS::fopen(fpath,"w+");  
+	else	
+		fp = ACE_OS::fopen(fpath,"a+");
+
+	if(fp == NULL)
+	{
+		printf("打开文件 %s 失败\n",fpath);
+		return;
+	}
+
+	PDT::CCommInf	m_commInf;
+	DAC_YCCON* ptr = m_commInf.yccon(ntype);
+
+	ACE_OS::fprintf(fp,"{\"time\":\"%u\",\"yc\":{", (hUInt32)ACE_OS::time(0));
+
+	for(int i = 0; i < (leng/4) ; i++)
+	{
+		if (ptr->ntype != ntype)	break;
+		ACE_OS::fprintf(fp,"\"%s\":\"%.2f\"",ptr->name, (float)MakeLong( MakeWord(temp[6+i*4],temp[5+i*4]),MakeWord(temp[4+i*4],temp[3+i*4])));
+		if (i!=(leng/4)-1)
+		{
+			ACE_OS::fprintf(fp,",");
+		}
+		ptr++;
+	}
+
+	ACE_OS::fprintf(fp,"}}",time(NULL));
+
+	if ( fp != NULL ) ACE_OS::fclose(fp);
+	*/
+}
+
+void PDT::CProto_Modbus_101::resolve_harmdata( PMC_Feature_ptr p )
+{/*
+	if(p == NULL) return;
+
+#ifdef SUPPORT_MODBUS_TCP
+	hUChar *temp = m_recv_msg.msg + 6;
+#else
+	hUChar *temp = m_recv_msg.msg ;
+#endif
+
+	int leng = temp[2];//遥测个数
+	int ntype = 1;
+
+	char fpath[256]; 
+	ACE_OS::snprintf(fpath,256,"%s/cmddata/harm.pdt",ACE_OS::getenv (SYS_ENV_VAR));
+
+	FILE* fp = NULL;
+
+	if( ACE_OS::filesize(fpath) > BLOG_FILE_LEN )	
+		fp = ACE_OS::fopen(fpath,"w+");  
+	else	
+		fp = ACE_OS::fopen(fpath,"a+");
+
+	if(fp == NULL)
+	{
+		printf("打开文件 %s 失败\n",fpath);
+		return;
+	}
+
+	PDT::CCommInf	m_commInf;
+	DAC_YCCON* ptr = m_commInf.yccon(ntype);
+
+
+	ACE_OS::fprintf(fp,"\"%s\":{",p->cmdDesc);
+
+	for(int i = 0; i < (leng/2) ; i++)
+	{
+		if (ptr->ntype != ntype)	break;
+		ACE_OS::fprintf(fp,"\"%s\":\"%.2f\"",ptr->name, (float)MakeWord(temp[4+i*2],temp[3+i*2]));
+		if (i!=(leng/4)-1)
+		{
+			ACE_OS::fprintf(fp,",");
+		}
+		ptr++;
+	}
+	ACE_OS::fprintf(fp,"}",time(NULL));
+
+	if ( fp != NULL ) ACE_OS::fclose(fp);
+	*/
+}
+
+
+
+
+
+void CProto_Modbus_101::resolve_paradata(PMC_Feature_ptr p)
+{/*
+	if(p == NULL) return;
+
+#ifdef SUPPORT_MODBUS_TCP
+	hUChar *temp = m_recv_msg.msg + 6;
+#else
+	hUChar *temp = m_recv_msg.msg ;
+#endif
+
+
+
+	int leng = temp[2];//遥测个数
+
+	char fpath[256]; 
+	ACE_OS::snprintf(fpath,256,"%s/cmddata/para.pdt",ACE_OS::getenv (SYS_ENV_VAR));
+
+	FILE* fp = NULL;
+
+	if( ACE_OS::filesize(fpath) > BLOG_FILE_LEN )	
+		fp = ACE_OS::fopen(fpath,"w+");  
+	else	
+		fp = ACE_OS::fopen(fpath,"a+");
+
+	if(fp == NULL)
+	{
+		printf("打开文件 %s 失败\n",fpath);
+		return;
+	}
+	
+	PDT::CCommInf	m_commInf;
+	DAC_YCCON* ptr = m_commInf.yccon(2);
+
 	//遥信
-	DAC_YX_DATA yxval;
-
-	int yxno = 64;
-	yxval.quality = 0;
-	yxval.updateTime = CDateTime::currentDateTime().toTimeT();
-
-
 	bitset<16> bite;
-	for(int i = 0; i < 1; i++)
+	ACE_OS::fprintf(fp,"{\"time\":\"%u\",\"yx\":{", (hUInt32)ACE_OS::time(0));
+
+	for(int i = 0; i < 2; i++)
 	{
 		bite = (temp[3+i*2]*256 + temp[4+i*2]);
 
 		for(int j = 0; j < 16 ; j++)
 		{
-			yxval.val =  bite.test(j); 
-			m_dataInf.setYx(p->routeNo, yxno, yxval);
-			yxno++;
+			if (ptr->ntype != 2)	break;
+			
+			ACE_OS::fprintf(fp,"\"%s\":\"%d\"",ptr->name, bite.test(j));
+			if (i!=1 && j!= 15)
+			{
+				ACE_OS::fprintf(fp,",");
+			}
+			ptr++;
 		}
 	}
-	
-	resolve_analog(p);
+	ACE_OS::fprintf(fp,"},\"yc\":{",time(NULL));
 
+	int ll = (leng-2)/2;
+
+	for(int i = 0; i < ll ; i++)
+	{
+		if (ptr->ntype != 2)	break;
+		ACE_OS::fprintf(fp,"\"%s\":\"%.2f\"",ptr->name, (float)MakeWord(temp[8+i*2],temp[7+i*2]));
+		if (i!=ll-1)
+		{
+			ACE_OS::fprintf(fp,",");
+		}
+		ptr++;
+	}
+	ACE_OS::fprintf(fp,"}}",time(NULL));
+
+	if ( fp != NULL ) ACE_OS::fclose(fp);
+*/
 }
+
+
+
 
 
 void CProto_Modbus_101::updateErrRate()
@@ -4275,18 +4834,52 @@ bool CProto_Modbus_101::sendYcCommand(void* pFeature)
 	ctrl_pro_calldata*	pCom = (ctrl_pro_calldata*)pFeature;
 
 	PMC_Feature_ptr p = m_polling_feature;
-	int	 i;
+	int	 i = 0;
+	hUChar cctype= YcCommand;
+	QString str;
+	/*
+	 *elec		 0		电能数据
+	 *Harmonic	 1		谐波数据
+	 *Parameter	 2		装置参数
+	 */
+	switch(pCom->ctrlNo)
+	{
+	case 0:
+		cctype = ElecCommand;
+		str = "elec";
+		break;
+	case 1:
+		cctype = HarmonicCmd;
+		str = "harm";
+		m_isExclusive = true;
+		break;
+	case 2:
+		cctype = ParameterCmd;
+		str = "para";
+		break;
+	default:
+		break;
+	}
 
 	for( i = 0 ; i < PMC_FEATURE_RECORD_MAXNUM ; i ++ , p ++ )
 	{
 		if(!p->isUsed) continue;
-		if(p->cmdNo == pCom->ctrlNo && p->frmType == YcCommand) break;
+		if(p->frmType == cctype) break;
 	}
 
 	if( i == PMC_FEATURE_RECORD_MAXNUM ) return false;
 	
+	char fpath[256]; 
+	ACE_OS::snprintf(fpath,256,"%s/cmddata/%s.pdt",ACE_OS::getenv (SYS_ENV_VAR), str.toAscii().data());
 
-	p->nextCmdNo = m_current_send_cmd.currFeatureptr->nextCmdNo;
+
+	QFile f;
+	f.remove(fpath);
+
+	//if (p->frmType != HarmonicCmd)
+	//{
+	//	p->nextCmdNo = m_current_send_cmd.currFeatureptr->nextCmdNo;
+	//}
 
 
 	m_current_send_cmd.cmd[0] = m_remoteAddr;
@@ -4310,13 +4903,82 @@ bool CProto_Modbus_101::sendYcCommand(void* pFeature)
 }
 
 
+/*
 
+DAC_GROUP	*pGroup;
+DAC_YC		*pYc;
+CCommInf	m_commInf;
+PDT::CDataInf	m_dataInf;
+DAC_YC_DATA localData;
+for(hUInt32 i=0;i<DAC_GROUP_NUM;i++)
+{
+	pGroup = m_commInf.group(i);
+	if(!pGroup || !(pGroup->valid))	continue;
+	for (hUInt32 j = 0; j < pGroup->ycNum; j++)
+	{
+		pGroup->code;	//组编码
+		
+		pYc = m_dataInf.ycPara(i, j);
+		if (pYc)
+		{
+			pYc->code; //遥测code
+				
+		}
+		m_dataInf.ycMainRoute(i,j,localData);
+		localData.val;		//值
+		localData.quality;	  //质量码
+		localData.updateTime; //更新时间
+	}
+}
+*/
+
+
+//bool CProto_Modbus_101::sendElecCommand(void* pFeature)
+//{
+//	if( pFeature == NULL ) return false;
+//
+//	ctrl_pro_calldata*	pCom = (ctrl_pro_calldata*)pFeature;
+//
+//	PMC_Feature_ptr p = m_polling_feature;
+//	int	 i;
+//
+//	for( i = 0 ; i < PMC_FEATURE_RECORD_MAXNUM ; i ++ , p ++ )
+//	{
+//		if(!p->isUsed) continue;
+//		if(p->cmdNo == 1 && p->frmType == ElecCommand) break;
+//	}
+//
+//	if( i == PMC_FEATURE_RECORD_MAXNUM ) return false;
+//
+//
+//	p->nextCmdNo = m_current_send_cmd.currFeatureptr->nextCmdNo;
+//
+//
+//	m_current_send_cmd.cmd[0] = m_remoteAddr;
+//	m_current_send_cmd.cmd[1] = p->fc;
+//	m_current_send_cmd.cmd[2] = p->addrH;
+//	m_current_send_cmd.cmd[3] = p->addrL;
+//	m_current_send_cmd.cmd[4] = p->lengthH;
+//	m_current_send_cmd.cmd[5] = p->lengthL;
+//
+//	hUInt16 crc = CToolFunctions::modbusCRC(m_current_send_cmd.cmd, 6);
+//	m_current_send_cmd.cmd[6] = HIBYTE(crc);
+//	m_current_send_cmd.cmd[7] = LOBYTE(crc);
+//	m_current_send_cmd.length = 8;
+//
+//	p->ykptr.ctrlNo = pCom->ctrlNo;
+//	m_current_send_cmd.currFeatureptr = p;
+//	m_currPollCmdno = p->cmdNo;
+//	ACE_OS::strncpy(m_current_send_cmd.cmdStr, p->cmdDesc, PMC_DESCRIBE_STRING_LENGTH);
+//
+//	return true;
+//}
 
 void CProto_Modbus_101::resolve_callYcCommand(PMC_Feature_ptr p)
 {
 	ctrl_pro_calldata_ack  ack;
 	memset(&ack,0,sizeof(ctrl_pro_calldata_ack));
-	ack.ctrlNo = p->ykptr.ctrlNo;//pYk->ctrlNo;
+	//ack.ctrlNo = p->ykptr.ctrlNo;//pYk->ctrlNo;
 	ack.ackState = 0;
 	ack.groupNo = m_grpno; 
 
@@ -4345,11 +5007,22 @@ void CProto_Modbus_101::resolve_callYcCommand(PMC_Feature_ptr p)
 	if (ycptr)
 	{
 		ack.groupNo = ycptr->srcGroup;
-		setCtrlCmdAckEx((char*)(&ack),sizeof(ctrl_pro_calldata_ack));	
 	}
-	else
+	
+	int copyLen = sizeof(ctrl_pro_calldata_ack);
+	if ( copyLen >= CTRL_COMMON_LEN ) copyLen = CTRL_COMMON_LEN;
+
+	ctrl_pro_common_ack commonAck;
+	commonAck.groupNo = ack.groupNo;
+
+	commonAck.length = copyLen;
+	ACE_OS::memcpy(commonAck.ackBuf,(char*)(&ack),copyLen);
+
+	CDacCtrl m_dacCtrl; 
+	if ( !m_dacCtrl.commonCmdAck( &commonAck ) ) 
 	{
-		setCtrlCmdAck((char*)(&ack),sizeof(ctrl_pro_calldata_ack));	
+		logprint(LOG_PROTOCOL+m_route,"<group=%s,state=%d> oo遥调返校输出错误oo! 信号无法传递给后台",(int)(ack.groupNo),ack.ackState);
+		return ;
 	}
 }
 
