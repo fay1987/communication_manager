@@ -6,7 +6,7 @@
 #include "dac/datainf.h"
 #include <bitset>
 
-#include "rdbop/rdbop.h"
+
 #include "rdb/field.h"
 #include "rdb/fieldinfo.h"
 #include "iec61850/iedinf.h"
@@ -17,6 +17,8 @@
 #include "dac/dacctrl.h"
 #include <ace/OS.h>
 #include <QDir>
+#include <QDate>
+#include <QTime>
 
 using namespace PDT;
 
@@ -36,13 +38,17 @@ CProto_Modbus_101::CProto_Modbus_101()
 	m_bOk = false;
 	memset(m_filePathName,0,sizeof(m_filePathName));
 	m_nflag = 0;
-	m_pcmd = new PMC_Feature;
+	m_pcmd = new PMC_Feature();
+	m_pRdbOp = new CRdbOp(CRdbOp::PingDirect);
 }
 
 CProto_Modbus_101::~CProto_Modbus_101()
 {
 	delete m_pcmd;
 	m_pcmd = NULL;
+
+	delete m_pRdbOp;
+	m_pRdbOp = NULL;
 	close();
 }
 
@@ -141,19 +147,16 @@ bool CProto_Modbus_101::readFeature( DAC_ROUTE	*m_proute )
 	}
 
 
-	CRdbOp *prdbop = new CRdbOp(CRdbOp::PingDirect);
-	if( !prdbop )
+	if( !m_pRdbOp )
 	{
 		logprint(LOG_PROTOCOL + m_route, "can't new CRdbOp object!");
 		return false;
 	}
 
-	CSql *pSql = prdbop->createSQL();
+	CSql *pSql = m_pRdbOp->createSQL();
 	if( !pSql )
 	{
 		logprint(LOG_PROTOCOL + m_route, "RdbOp->createSQL() failed!");
-		delete prdbop;
-		prdbop = NULL;
 		return false;
 	}
 
@@ -166,12 +169,10 @@ bool CProto_Modbus_101::readFeature( DAC_ROUTE	*m_proute )
 	pSql->orderField("f_cmdno",CSql::S_Asc);
 
 	CDataset ds;
-	if( prdbop->exec(*pSql , ds) < 0)
+	if( m_pRdbOp->exec(*pSql , ds) < 0)
 	{
-		logprint(LOG_PROTOCOL + m_route,"pRdbOp->exec( *pSql,ds) failed");
+		logprint(LOG_PROTOCOL + m_route,"m_pRdbOp->exec( *pSql,ds) failed");
 		pSql->destroy();
-		delete prdbop;
-		prdbop = NULL;
 		return false;
 	}
 
@@ -245,8 +246,6 @@ bool CProto_Modbus_101::readFeature( DAC_ROUTE	*m_proute )
 	}
 
 	pSql->destroy();
-	delete prdbop;
-	prdbop = NULL;
 	if(rows == 0)
 	{
 		logprint(LOG_PROTOCOL + m_route, "规约特征表中没有配置对应的参数！");
@@ -708,27 +707,63 @@ bool CProto_Modbus_101::hasAnyManualCommand()
 
 	if (m_nflag == 1 && m_route == 0)
 	{
-		unsigned char buf[512];
-		hInt32 headLen,dataLen;
+		//PDT::CString strCode = "grp0";
+		//ctrl_pro_common common;
+		//ACE_OS::strncpy(common.groupCode, strCode.c_str(), DAC_NAME_LEN);  //赋值commom编码
+		//common.length = CTRL_COMMON_LEN;
 
-		headLen = sizeof( ctrl_head );
-		dataLen = sizeof( ctrl_pro_common );
-		ctrl_head*	pHead1 = (ctrl_head*)buf;
-		pHead1->type = CTRL_PRO_YCCOMMAND;
-		ctrl_pro_calldata* pData = ( ctrl_pro_calldata* )( buf + headLen/* + headLen*/);
-		//pData->groupNo = 0;
-		pData->ctrlNo = 1;
 
-		PDT::CString strCode = "grp0";
-		ctrl_pro_common common;
-		ACE_OS::strncpy(common.groupCode, strCode.c_str(), DAC_NAME_LEN);  //赋值commom编码
-		common.length = CTRL_COMMON_LEN;
-		ACE_OS::memcpy(common.cmdBuf,buf,CTRL_COMMON_LEN);
-		CDacCtrl m_dacCtrl; 
-		if ( !m_dacCtrl.commonCmd( &common ) ) 
-		{
-			return 1;
-		}
+		//unsigned char buf[512];
+		//hInt32 headLen,dataLen;
+
+		//headLen = sizeof( ctrl_head );
+		//dataLen = sizeof( ctrl_pro_common );
+		//ctrl_head*	pHead = (ctrl_head*)buf;
+		//pHead->type = CTRL_PRO_CONSTANTVALUE;
+
+
+	
+		//PDT::CString str = "07;00;0A;1A;01;00;00;00";
+
+		//ctrl_pro_constantvalue* pYk = ( ctrl_pro_constantvalue* )( buf + headLen/* + headLen*/);
+
+		////pYk->ctrlType = CONSTANTVALUE_WRITE;
+		////pYk->length = str.length();
+		////ACE_OS::memcpy(pYk->cmdBuf,str.c_str(),pYk->length);
+		//
+		//pYk->ctrlType = CONSTANTVALUE_READ;
+		//pYk->length = 0;
+
+		//ACE_OS::memcpy(common.cmdBuf,buf,CTRL_COMMON_LEN);
+
+		//CDacCtrl m_dacCtrl; 
+		//if ( !m_dacCtrl.commonCmd( &common ) ) 
+		//{
+		//	return 1;
+		//}
+
+		//unsigned char buf[512];
+		//hInt32 headLen,dataLen;
+
+		//headLen = sizeof( ctrl_head );
+		//dataLen = sizeof( ctrl_pro_common );
+		//ctrl_head*	pHead1 = (ctrl_head*)buf;
+		//pHead1->type = CTRL_PRO_YCCOMMAND;
+		//ctrl_pro_calldata* pData = ( ctrl_pro_calldata* )( buf + headLen/* + headLen*/);
+		////pData->groupNo = 0;
+		//pData->ctrlNo = 1;
+
+		//PDT::CString strCode = "grp0";
+		//ctrl_pro_common common;
+		//ACE_OS::strncpy(common.groupCode, strCode.c_str(), DAC_NAME_LEN);  //赋值commom编码
+		//common.length = CTRL_COMMON_LEN;
+		//ACE_OS::memcpy(common.cmdBuf,buf,CTRL_COMMON_LEN);
+		//CDacCtrl m_dacCtrl; 
+		//if ( !m_dacCtrl.commonCmd( &common ) ) 
+		//{
+		//	return 1;
+		//}
+
 
 		//unsigned char buf[512];
 		//hInt32 headLen,dataLen;
@@ -2266,6 +2301,12 @@ bool PDT::CProto_Modbus_101::make_constantValue_read( ctrl_pro_constantvalue* pC
 
 
 	//根据规约特征表中的配置寻找该帧的下一帧该发送的报文
+	m_current_send_cmd.currFeatureptr = m_pcmd;
+	m_current_send_cmd.currFeatureptr->isAck = true;
+	m_current_send_cmd.currFeatureptr->isUsed = true;
+	m_current_send_cmd.currFeatureptr->fc = 0x7A;
+	m_current_send_cmd.currFeatureptr->frmType = ConstantValue;
+
 	int nLength = 0;
 	m_current_send_cmd.cmd[nLength++] = 0x71;	//
 	m_current_send_cmd.cmd[nLength++] = 0x00;	//
@@ -2309,6 +2350,12 @@ bool PDT::CProto_Modbus_101::make_constantValue_write( ctrl_pro_constantvalue* p
 	//if(p == NULL) return false;
 
 	//根据规约特征表中的配置寻找该帧的下一帧该发送的报文
+	m_current_send_cmd.currFeatureptr = m_pcmd;
+	m_current_send_cmd.currFeatureptr->isAck = true;
+	m_current_send_cmd.currFeatureptr->isUsed = true;
+	m_current_send_cmd.currFeatureptr->fc = 0x7D;
+	m_current_send_cmd.currFeatureptr->frmType = ConstantValue;
+
 	int nLength = 0;
 	m_current_send_cmd.cmd[nLength++] = 0x71;	//
 	m_current_send_cmd.cmd[nLength++] = 0x00;	//
@@ -2350,6 +2397,7 @@ bool PDT::CProto_Modbus_101::make_constantValue_write( ctrl_pro_constantvalue* p
 	m_current_send_cmd.cmd[nLength++] = crc;
 	m_current_send_cmd.cmd[nLength++] = 0x16;
 	m_current_send_cmd.length = nLength;
+
 
 	ACE_OS::strncpy(m_current_send_cmd.cmdStr, "", PMC_DESCRIBE_STRING_LENGTH);
 
@@ -2738,13 +2786,17 @@ int CProto_Modbus_101::paraDevProtocol()
 	}
 
 
-	//首先寻找报文头（判断首位是否地址码和长度）
-	if (!findHeadAndAdjustMsg())
-	{
-		return RECEIVE_ERROR_ROUTE;
-	}
 		
 	PMC_Feature_ptr pfeature = m_current_send_cmd.currFeatureptr;
+
+	if (pfeature->frmType != ConstantValue)
+	{
+		if (!findHeadAndAdjustMsg()) //首先寻找报文头（判断首位是否地址码和长度）
+		{
+			return RECEIVE_ERROR_ROUTE;
+		}
+	}
+
 	//首先判断是否错误帧
 	bool bFlag = false;
 	hUChar ch;
@@ -2811,9 +2863,13 @@ int CProto_Modbus_101::paraDevProtocol()
 	}
 #else
 	//非错误帧，首先计算校验
-	if (m_recv_msg.msg[0] == 0x71 && m_recv_msg.msg[3]==0x71)
+	if (pfeature->frmType == ConstantValue)
 	{
 		frmLen = m_recv_msg.msg[1];
+		if (frmLen < 20)
+		{
+			return RECEIVE_UNFINISHED;
+		}
 	}
 	else if(m_recv_msg.msg[1] == 0x06 || m_recv_msg.msg[1] == 0x05 || m_recv_msg.msg[1] == 0x0F || m_recv_msg.msg[1] == 0x10 
 		|| m_recv_msg.msg[1] == 0x16 || m_recv_msg.msg[1] == 0x7F) 
@@ -3641,7 +3697,12 @@ int CProto_Modbus_101::resolve_constvalue(PMC_Feature_ptr pfeature)
 				{
 					if (nLen > 20)
 					{
-						ACE_OS::memcpy(ack.ackBuf,temp+19,temp[18]);
+						//ACE_OS::memcpy(ack.ackBuf,temp+19,temp[18]);
+						QString str = QString("%1;%2;%3;%4;%5;%6;%7;%8")
+							.arg(temp[18]).arg(temp[19]).arg(temp[20]).arg(temp[21])
+							.arg(temp[22]).arg(temp[23]).arg(temp[24]).arg(temp[25]);
+						ACE_OS::memcpy(ack.ackBuf,str.toStdString().c_str(),str.length());
+
 						ack.length = temp[18];
 						ack.ackState = 0;
 					}
@@ -3938,6 +3999,7 @@ bool CProto_Modbus_101::getRecordsData()
 		// 重新请求录波数据前，需要先删除旧的数据。
 		//char cfilePathName[256];
 		//ACE_OS::snprintf(cfilePathName,256,"%s/Record/",ACE_OS::getenv (SYS_ENV_VAR));
+
 		QString strPath = QString("%1/cmddata/record/").arg( ACE_OS::getenv(SYS_ENV_VAR) );
 		
 		QDir d(strPath);
@@ -4144,7 +4206,8 @@ void CProto_Modbus_101::resolve_RecordsData(PMC_Feature_ptr p)
 	
 	if (p->frmType == RecordsData_SOE)
 	{
-		ACE_OS::snprintf(m_filePathName,256,"%s/cmddata/record/%d.pdt",ACE_OS::getenv (SYS_ENV_VAR),p->cmdNo);
+		DAC_GROUP *pGroup = m_commInf.group( m_grpno); 
+		ACE_OS::sprintf(m_filePathName,"%s/cmddata/%s/record/%d.pdt",ACE_OS::getenv (SYS_ENV_VAR),pGroup->code,p->cmdNo);
 	}
 	
 	FILE* fp = NULL;
@@ -4490,6 +4553,10 @@ bool PDT::CProto_Modbus_101::sendUdp()
 	{
 		sendpara para = m_vecPara.last();
 		str = QString("%1").arg(para.cmac);
+		m_current_send_cmd.currFeatureptr->isAck = FALSE;
+		m_current_send_cmd.currFeatureptr->isUsed = true;
+		m_current_send_cmd.currFeatureptr->fc = 0x10;
+		m_current_send_cmd.currFeatureptr->frmType = ConstantValue;
 
 		m_current_send_cmd.cmd[i++] = 0x00;
 		m_current_send_cmd.cmd[i++] = 0x10;
@@ -4550,8 +4617,6 @@ bool PDT::CProto_Modbus_101::editpara(ctrl_pro_constantvalue* pCom)
 	}
 
 	int i = 0;
-
-	sendpara para = m_vecPara.last();
 	
 	QString qstr = QString("%s").arg(pCom->cmdBuf);
 	QStringList ll = qstr.split(":");
@@ -4610,7 +4675,7 @@ bool PDT::CProto_Modbus_101::editpara(ctrl_pro_constantvalue* pCom)
 
 
 void PDT::CProto_Modbus_101::resolve_elecdata( PMC_Feature_ptr p )
-{/*
+{
 	if(p == NULL) return;
 
 #ifdef SUPPORT_MODBUS_TCP
@@ -4622,8 +4687,9 @@ void PDT::CProto_Modbus_101::resolve_elecdata( PMC_Feature_ptr p )
 	int leng = temp[2];//遥测个数
 	int ntype = 0;
 
-	char fpath[256]; 
-	ACE_OS::snprintf(fpath,256,"%s/cmddata/elec.pdt",ACE_OS::getenv (SYS_ENV_VAR));
+	char fpath[256];
+	DAC_GROUP *pGroup = m_commInf.group( m_grpno); 
+	ACE_OS::sprintf(fpath,"%s/cmddata/%s/elec.pdt",ACE_OS::getenv (SYS_ENV_VAR),pGroup->code);
 
 	FILE* fp = NULL;
 
@@ -4657,11 +4723,10 @@ void PDT::CProto_Modbus_101::resolve_elecdata( PMC_Feature_ptr p )
 	ACE_OS::fprintf(fp,"}}",time(NULL));
 
 	if ( fp != NULL ) ACE_OS::fclose(fp);
-	*/
 }
 
 void PDT::CProto_Modbus_101::resolve_harmdata( PMC_Feature_ptr p )
-{/*
+{
 	if(p == NULL) return;
 
 #ifdef SUPPORT_MODBUS_TCP
@@ -4674,7 +4739,8 @@ void PDT::CProto_Modbus_101::resolve_harmdata( PMC_Feature_ptr p )
 	int ntype = 1;
 
 	char fpath[256]; 
-	ACE_OS::snprintf(fpath,256,"%s/cmddata/harm.pdt",ACE_OS::getenv (SYS_ENV_VAR));
+	DAC_GROUP *pGroup = m_commInf.group( m_grpno); 
+	ACE_OS::sprintf(fpath,"%s/cmddata/%s/harm.pdt",ACE_OS::getenv (SYS_ENV_VAR),pGroup->code);
 
 	FILE* fp = NULL;
 
@@ -4689,8 +4755,8 @@ void PDT::CProto_Modbus_101::resolve_harmdata( PMC_Feature_ptr p )
 		return;
 	}
 
-	PDT::CCommInf	m_commInf;
 	DAC_YCCON* ptr = m_commInf.yccon(ntype);
+	ptr+= p->startNo;
 
 
 	ACE_OS::fprintf(fp,"\"%s\":{",p->cmdDesc);
@@ -4708,7 +4774,96 @@ void PDT::CProto_Modbus_101::resolve_harmdata( PMC_Feature_ptr p )
 	ACE_OS::fprintf(fp,"}",time(NULL));
 
 	if ( fp != NULL ) ACE_OS::fclose(fp);
-	*/
+
+	if (m_currPollCmdno == 2)
+	{
+		for(int i = 0; i < (leng/2) ; i++)
+		{
+			if (i < 6)
+			{
+				harm[i] = (float)MakeWord(temp[4+i*2],temp[3+i*2]);
+			}
+		}
+	}
+	else
+	{
+		int htype = 0;
+		int harmotype = 0;
+		float fcall = 0.0;
+		switch(m_currPollCmdno)
+		{
+		case 3:
+			htype = 2;
+			harmotype = 36;
+			fcall = harm[0];
+			break;
+		case 4:
+			htype = 2;
+			harmotype = 38;
+			fcall = harm[1];
+			break;
+		case 5:
+			htype = 2;
+			harmotype = 40;
+			fcall = harm[2];
+			break;
+		case 6:
+			htype = 1;
+			harmotype = 35;
+			fcall = harm[3];
+			break;
+		case 7:
+			htype = 1;
+			harmotype = 37;
+			fcall = harm[4];
+			break;
+		case 8:
+			htype = 1;
+			harmotype = 39;
+			fcall = harm[5];
+			break;
+		}
+		if( !m_pRdbOp )
+		{
+			logprint(LOG_PROTOCOL + m_route, "can't new CRdbOp object!");
+			return;
+		}
+
+		CSql *pSql = m_pRdbOp->createSQL();
+		if( !pSql )
+		{
+			logprint(LOG_PROTOCOL + m_route, "RdbOp->createSQL() failed!");
+			return;
+		}
+
+		pSql->setOperate( CSql::OP_Insert);
+		pSql->setTableName("tdata_harmonic");
+		
+		pSql->insertField("f_sdevid", m_commInf.getSenddevnobygroup(m_grpno));		
+		pSql->insertField("f_hdate", QDate::currentDate().toString("yyyyMMdd").toAscii().data());
+		pSql->insertField("f_htime", QTime::currentTime().toString("hh:mm:ss").toAscii().data());
+		pSql->insertField("f_htype", htype);
+		pSql->insertField("f_harmotype", harmotype);
+
+		QString str;
+		for(int i = 1; i < 30;)
+		{
+			str = QString("f_h%1").arg(i).arg(i+2);
+			pSql->insertField(str.toAscii().data(), (float)MakeWord(temp[4+i*2],temp[3+i*2]));
+			i+=2;
+		}
+		pSql->insertField("f_hcall", fcall);
+
+
+		CDataset ds;
+		if( m_pRdbOp->exec(*pSql , ds) < 0)
+		{
+			logprint(LOG_PROTOCOL + m_route,"m_pRdbOp->exec( *pSql,ds) failed");
+			pSql->destroy();
+			return;
+		}
+	}
+	
 }
 
 
@@ -4716,7 +4871,7 @@ void PDT::CProto_Modbus_101::resolve_harmdata( PMC_Feature_ptr p )
 
 
 void CProto_Modbus_101::resolve_paradata(PMC_Feature_ptr p)
-{/*
+{
 	if(p == NULL) return;
 
 #ifdef SUPPORT_MODBUS_TCP
@@ -4730,7 +4885,8 @@ void CProto_Modbus_101::resolve_paradata(PMC_Feature_ptr p)
 	int leng = temp[2];//遥测个数
 
 	char fpath[256]; 
-	ACE_OS::snprintf(fpath,256,"%s/cmddata/para.pdt",ACE_OS::getenv (SYS_ENV_VAR));
+	DAC_GROUP *pGroup = m_commInf.group( m_grpno); 
+	ACE_OS::sprintf(fpath,"%s/cmddata/%s/para.pdt",ACE_OS::getenv (SYS_ENV_VAR),pGroup->code);
 
 	FILE* fp = NULL;
 
@@ -4785,7 +4941,7 @@ void CProto_Modbus_101::resolve_paradata(PMC_Feature_ptr p)
 	ACE_OS::fprintf(fp,"}}",time(NULL));
 
 	if ( fp != NULL ) ACE_OS::fclose(fp);
-*/
+
 }
 
 
@@ -4856,7 +5012,8 @@ bool CProto_Modbus_101::sendYcCommand(void* pFeature)
 	if( i == PMC_FEATURE_RECORD_MAXNUM ) return false;
 	
 	char fpath[256]; 
-	ACE_OS::snprintf(fpath,256,"%s/cmddata/%s.pdt",ACE_OS::getenv (SYS_ENV_VAR), str.toAscii().data());
+	DAC_GROUP *pGroup = m_commInf.group( m_grpno); 
+	ACE_OS::sprintf(fpath,"%s/cmddata/%s/%s.pdt",ACE_OS::getenv (SYS_ENV_VAR), pGroup->code,str.toAscii().data());
 
 
 	QFile f;

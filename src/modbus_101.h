@@ -4,6 +4,7 @@
 #include "dac/protocol.h"
 #include <ace/config-all.h>
 #include "utl/intervaltimerset.h"
+#include "rdbop/rdbop.h"
 #include <QVector>
 #include <QMap>
 
@@ -296,24 +297,25 @@ namespace	PDT
 
 
 		//SOE
-		short		m_nSOENum;	//SOE数据请求判断flag
-		short		m_nSumSOE;	//SOE总条数
-		
-		QVector<ctrl_pro_data_soe> m_nVector;
+		short							m_nSOENum;	//SOE数据请求判断flag
+		short							m_nSumSOE;	//SOE总条数
+		QVector<ctrl_pro_data_soe>		m_nVector;
 
 		//录波
-		int     m_nRecordsNum;
-
+		int								m_nRecordsNum;
 		QVector<PMC_Feature_ptr>		m_record_feature;	//录波命令
-		char m_filePathName[256];
+		char							m_filePathName[256];
 
+		QVector<sendpara>				m_vecPara;		//广播修改下位机频率和地址
 
-		QVector<sendpara> m_vecPara;
+		//谐波
+		float							harm[6];
 
-		hBool	m_bOk;
+		hBool							m_bOk;
+		PMC_Feature_ptr					m_pcmd;	
 
-		int	   m_nflag;
-		PMC_Feature_ptr	m_pcmd;	
+		int								m_nflag;
+		CRdbOp*							m_pRdbOp;
 	};
 }
 #endif	//_PDT_DAC_MODBUS_101_H_
