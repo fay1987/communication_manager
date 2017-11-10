@@ -173,8 +173,8 @@ namespace	PDT
 	struct sendpara
 	{
 		char 	cmac[12];
-		short	frequency;
-		short	rtu;
+		int		frequency;
+		int		rtu;
 	};
 
 	class MODBUS_101_EXPORT	CProto_Modbus_101 : public PDT::CProtocol

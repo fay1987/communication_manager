@@ -748,7 +748,7 @@ bool CProto_Modbus_101::hasAnyManualCommand()
 		//headLen = sizeof( ctrl_head );
 		//dataLen = sizeof( ctrl_pro_common );
 		//ctrl_head*	pHead1 = (ctrl_head*)buf;
-		//pHead1->type = CTRL_PRO_YCCOMMAND;
+		//pHead1->type = CTRL_PRO_UDP;
 		//ctrl_pro_calldata* pData = ( ctrl_pro_calldata* )( buf + headLen/* + headLen*/);
 		////pData->groupNo = 0;
 		//pData->ctrlNo = 1;
@@ -2866,7 +2866,7 @@ int CProto_Modbus_101::paraDevProtocol()
 	if (pfeature->frmType == ConstantValue)
 	{
 		frmLen = m_recv_msg.msg[1];
-		if (frmLen < 20)
+		if (m_recv_msg.length < frmLen +6)
 		{
 			return RECEIVE_UNFINISHED;
 		}
@@ -3712,7 +3712,7 @@ int CProto_Modbus_101::resolve_constvalue(PMC_Feature_ptr pfeature)
 						ack.ackState = 1;
 					}
 				}	
-				SetCVCmdAck(&ack);	
+				SetCVCmdAck(&ack);
 			}
 			break;
 		case CONSTANTVALUE_WRITE:	//写
@@ -4513,46 +4513,55 @@ void CProto_Modbus_101::resolve_analogTM(PMC_Feature_ptr p)
 
 bool PDT::CProto_Modbus_101::sendUdp()
 {  
-	char buff[1024];
-	char fpath[256]; 
-	ACE_OS::snprintf(fpath,256,"%s/bin/web/tmp/senddev_para.csv",ACE_OS::getenv (SYS_ENV_VAR));
-
-	FILE* fp = ACE_OS::fopen(fpath,"r+");  
-
-	if(fp == NULL)
-	{
-		printf("打开文件 %s 失败\n",fpath);
-		return FALSE;
-	}
-
-	//读数据，加入vector
 	QString str;
-	QStringList ll;
-	fgets(buff, sizeof(buff), fp);
-	while(fgets(buff, sizeof(buff), fp))
+	if (m_vecPara.size() == 0)
 	{
-		str = buff;
-		ll = str.split(",");
-		str = ll.at(0);
-		if (ll.count() < 3 || str.length()< 12 || str.toULong() <= 0)
+		char buff[1024];
+		char fpath[256]; 
+		ACE_OS::snprintf(fpath,256,"%s/bin/web/tmp/senddev_para.csv",ACE_OS::getenv (SYS_ENV_VAR));
+
+		FILE* fp = ACE_OS::fopen(fpath,"r+");  
+
+		if(fp == NULL)
 		{
-			ll.clear();
-			continue;
+			printf("打开文件 %s 失败\n",fpath);
+			return FALSE;
 		}
-		sendpara para;
-		memset(para.cmac, 0, 16);		
-		memcpy(para.cmac, str.toStdString().c_str(), str.length());
-		para.rtu = ll.at(1).toUInt();
-		para.frequency = ll.at(2).toUInt();
-		m_vecPara.push_front(para);
-		ll.clear();
+
+		//读数据，加入vector
+		QString strmac;
+		QStringList ll;
+		fgets(buff, sizeof(buff), fp);
+		while(fgets(buff, sizeof(buff), fp))
+		{
+			str = buff;
+			ll = str.split(",");
+			str = ll.at(0);
+			if (ll.count() < 6 || str.compare("SEND") != 0)
+			{
+				ll.clear();
+				continue;
+			}
+			sendpara para;
+			strmac = ll.at(2);
+			memset(para.cmac, 0, 12);		
+			memcpy(para.cmac, strmac.toStdString().c_str(), strmac.length());
+			para.rtu = ll.at(3).toUInt();
+			para.frequency = ll.at(4).toUInt();
+			m_vecPara.push_front(para);
+			ll.clear();
+		}
+		if ( fp != NULL ) ACE_OS::fclose(fp);
 	}
+
 
 	int i = 0;
 	if (m_vecPara.size() > 0)
 	{
+		m_current_send_cmd.currFeatureptr = m_pcmd;
+
 		sendpara para = m_vecPara.last();
-		str = QString("%1").arg(para.cmac);
+		str = QString("%1").arg(para.cmac).trimmed();
 		m_current_send_cmd.currFeatureptr->isAck = FALSE;
 		m_current_send_cmd.currFeatureptr->isUsed = true;
 		m_current_send_cmd.currFeatureptr->fc = 0x10;
@@ -4566,12 +4575,12 @@ bool PDT::CProto_Modbus_101::sendUdp()
 		m_current_send_cmd.cmd[i++] = 0x0D;
 		m_current_send_cmd.cmd[i++] = 0x1A;
 
-		m_current_send_cmd.cmd[i++] = HiByte(str.mid(0,4).toUInt(0,16));
-		m_current_send_cmd.cmd[i++] = LoByte(str.mid(0,4).toUInt(0,16));
-		m_current_send_cmd.cmd[i++] = HiByte(str.mid(4,4).toUInt(0,16));
-		m_current_send_cmd.cmd[i++] = LoByte(str.mid(4,4).toUInt(0,16));		
-		m_current_send_cmd.cmd[i++] = HiByte(str.mid(8,4).toUInt(0,16));
-		m_current_send_cmd.cmd[i++] = LoByte(str.mid(8,4).toUInt(0,16));
+		m_current_send_cmd.cmd[i++] = HiByte(str.mid(0,4).toUInt());
+		m_current_send_cmd.cmd[i++] = LoByte(str.mid(0,4).toUInt());
+		m_current_send_cmd.cmd[i++] = HiByte(str.mid(4,4).toUInt());
+		m_current_send_cmd.cmd[i++] = LoByte(str.mid(4,4).toUInt());		
+		m_current_send_cmd.cmd[i++] = HiByte(str.mid(8,4).toUInt());
+		m_current_send_cmd.cmd[i++] = LoByte(str.mid(8,4).toUInt());
 
 		m_current_send_cmd.cmd[i++] = 0x00;
 		m_current_send_cmd.cmd[i++] = 0x02;
@@ -4602,8 +4611,6 @@ bool PDT::CProto_Modbus_101::sendUdp()
 
 		m_vecPara.pop_back();
 	}
-
-
 	return TRUE;
 
 }
@@ -4774,7 +4781,7 @@ void PDT::CProto_Modbus_101::resolve_harmdata( PMC_Feature_ptr p )
 	ACE_OS::fprintf(fp,"}",time(NULL));
 
 	if ( fp != NULL ) ACE_OS::fclose(fp);
-
+/* 谐波数据历史存盘
 	if (m_currPollCmdno == 2)
 	{
 		for(int i = 0; i < (leng/2) ; i++)
@@ -4839,9 +4846,9 @@ void PDT::CProto_Modbus_101::resolve_harmdata( PMC_Feature_ptr p )
 		pSql->setOperate( CSql::OP_Insert);
 		pSql->setTableName("tdata_harmonic");
 		
-		pSql->insertField("f_sdevid", m_commInf.getSenddevnobygroup(m_grpno));		
+		pSql->insertField("f_sdevcode", m_commInf.getSenddevnobygroup(m_grpno));		
 		pSql->insertField("f_hdate", QDate::currentDate().toString("yyyyMMdd").toAscii().data());
-		pSql->insertField("f_htime", QTime::currentTime().toString("hh:mm:ss").toAscii().data());
+		pSql->insertField("f_htime", QTime::currentTime().toString("hhmmss").toAscii().data());
 		pSql->insertField("f_htype", htype);
 		pSql->insertField("f_harmotype", harmotype);
 
@@ -4863,7 +4870,7 @@ void PDT::CProto_Modbus_101::resolve_harmdata( PMC_Feature_ptr p )
 			return;
 		}
 	}
-	
+	*/
 }
 
 
