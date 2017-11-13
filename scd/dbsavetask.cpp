@@ -406,8 +406,8 @@ bool CDbSaveTask::saveHisYc(const SCD_DATA_YC* pData)
 
 	m_pSql->insertField("f_type",(hUInt32)pData->ycdataType);
 	m_pSql->insertField("f_value",(hFloat)pData->data.val);
-	CDateTime dt = CDateTime::currentDateTime();
-	m_pSql->insertField("f_updatetime",dt.toString("yyyyMMdd hhmmss"));
+	
+	m_pSql->insertField("f_updatetime",dateTime.toString("yyyyMMdd hhmmss"));
 
 	if ( m_pRdbOp->exec(*m_pSql) == -1 )
 	{
