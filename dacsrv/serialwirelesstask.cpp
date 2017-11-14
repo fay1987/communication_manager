@@ -256,15 +256,16 @@ hInt32	CSerialWTask::svc()
 	}
 
 	checkObject();	//第一次先check
+	ACE_Time_Value tv(0,100000);							//100ms
 	while ( 1 )		//!isExit
 	{
 		if ( mgr->testcancel(mgr->thr_self()) ) 
 			break;
-		
-		
 
 		if ( pSystemInfo->loadParaFlag & LOADPARA_CHANNEL ) 
 			continue;
+
+		ACE_OS::sleep( tv );
 
 		//每秒check一次对象
 		lastTime = clock()/CLOCKS_PER_SEC*1000;;
@@ -273,8 +274,6 @@ hInt32	CSerialWTask::svc()
 			checkObject();
 			starttime = lastTime;
 		}
-
-
 
 
 		QMap<int, CSerialChannelWireless*>::iterator it;

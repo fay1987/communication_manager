@@ -135,7 +135,7 @@ hInt32	CLinkTaskPool::svc()
 	DAC_SYSTEM_INFO *pSystemInfo = m_commInf.systemInfo();
 	ACE_Thread_Manager* mgr = this->thr_mgr();
 	int no = 0;
-	ACE_Time_Value tv(0,DAC_PROTO_RUN_DELAY);	//10ms 
+	ACE_Time_Value tv(0,100000);	//100ms 
 	CLink* pLink = NULL;
 	LINKNO_VECTOR	linkNoVec;
 	int poolSize = CONFIG::instance()->linkThreadPoolSize();
