@@ -17,6 +17,7 @@ CConfig::CConfig()
 	m_filterRoute = false;
 	m_filterGroup = false;
 	m_filterBegin = false;
+	m_timeinterval = 500;
 }
 
 CConfig::~CConfig()
@@ -68,6 +69,11 @@ bool CConfig::read()
 	m_filterGroup = (bool)sysIni.value("EVENT_MODE/filtergroup").toInt();
 	m_filterBegin = (bool)sysIni.value("EVENT_MODE/filterbegin").toInt();
 	
+	if (sysIni.contains("REQUEST_INTERVAL/timeinterval"))
+	{
+		m_timeinterval = sysIni.value("REQUEST_INTERVAL/timeinterval").toInt();
+	}
+
 	logprint(LOG_DACSRV_CONFIG,"读取配置文件<%s>成功",DACSRV_CONFIG_FILE);
 
 	return true;
@@ -122,5 +128,10 @@ bool CConfig::filterGroup() const
 bool CConfig::filterBegin() const
 {
 	return m_filterBegin;
+}
+
+hUInt32 CConfig::timeinterval() const
+{
+	return m_timeinterval;
 }
 

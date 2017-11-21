@@ -29,6 +29,8 @@ public:
 	bool			filterGroup() const;
 	bool			filterBegin() const;
 
+	hUInt32			timeinterval() const;
+
 private:
 	hUInt32			m_linkThreadPoolSize;		//链路处理线程池大小
 	hUInt32			m_netThreadPoolSize;		//网络线程池大小
@@ -41,6 +43,8 @@ private:
 	bool			m_filterRoute;				//过滤路径事项
 	bool			m_filterGroup;				//过滤数据组事项
 	bool			m_filterBegin;				//过滤通道&数据组&路径第一次启动事项
+
+	hUInt32			m_timeinterval;				//无线网关控制同时发送的时间间隔
 };
 
 typedef	ACE_Singleton<CConfig,ACE_SYNCH_MUTEX>	CONFIG;

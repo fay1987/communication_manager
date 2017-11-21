@@ -77,12 +77,7 @@ hInt32 CLoadTask::svc()
 
 	//wfp add for ¹æÔ¼heart¼ì²â
 	m_timeId = m_timer.add(1000);	//1s
-	
-#ifdef PDT_DEBUG
-	m_timeOutID = m_timer.add(1500);
-#else	
-	m_timeOutID = m_timer.add(500);
-#endif //end PDT_DEBUG
+	m_timeOutID = m_timer.add(CONFIG::instance()->timeinterval());
 	m_timer.start();
 	
 	while ( 1 )
