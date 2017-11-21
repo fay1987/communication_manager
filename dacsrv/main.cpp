@@ -151,7 +151,7 @@ int ACE_TMAIN(int argc, char *argv[])
 	sigset(SIGCHLD,signal_function);
 #endif //end PDT_DEBUG
 
-	QTextCodec * codec = QTextCodec::codecForName("GB2312");
+	QTextCodec * codec = QTextCodec::codecForName("utf-8");
 	if (codec)
 	{
 		QTextCodec::setCodecForLocale(codec);
