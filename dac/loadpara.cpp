@@ -69,28 +69,40 @@ bool	CLoadPara::loadAll()
 
 bool	CLoadPara::loadStation()
 {
-	CSql* pSql = m_pRdbOp->createSQL();
-	if ( !pSql )
-	{
-		logprint(LOG_LOADPARA_BASE,"CLoadPara::loadStation() : m_pRdbOp->createSQL() failed");
-		return false;
-	}
-	pSql->setOperate( CSql::OP_Select );
-	pSql->setTableName("tdac_station");
-	pSql->selectAllField();
-	pSql->whereField("f_stano",0,CSql::CP_GreaterEqual);
-	pSql->orderField( "f_stano");
+	//CSql* pSql = m_pRdbOp->createSQL();
+	//if ( !pSql )
+	//{
+	//	logprint(LOG_LOADPARA_BASE,"CLoadPara::loadStation() : m_pRdbOp->createSQL() failed");
+	//	return false;
+	//}
+	//pSql->setOperate( CSql::OP_Select );
+	//pSql->setTableName("tdac_station");
+	//pSql->selectAllField();
+	//pSql->whereField("f_stano",0,CSql::CP_GreaterEqual);
+	//pSql->orderField( "f_stano");
 
 	int ret;
 	CDataset ds;
-	ret = m_pRdbOp->exec( *pSql,ds);
+	//ret = m_pRdbOp->exec( *pSql,ds);
+
+	//if ( ret < 0 )
+	//{
+	//	logprint(LOG_LOADPARA_BASE,"CLoadPara::loadStation() : m_pRdbOp->exec( *pSql,ds) failed");
+	//	pSql->destroy();
+	//	return false;
+	//}
+
+	char sqlStr[512] = "";
+	ACE_OS::sprintf(sqlStr, "select * from tdac_station,tsys_userinfo where tdac_station.f_stano =  tsys_userinfo.f_orgid");
+
+	ret = m_pRdbOp->exec(sqlStr, ds);
 
 	if ( ret < 0 )
 	{
 		logprint(LOG_LOADPARA_BASE,"CLoadPara::loadStation() : m_pRdbOp->exec( *pSql,ds) failed");
-		pSql->destroy();
 		return false;
 	}
+
 
 	int i,j,retno,okRows=0;
 	int maxno = -1;
@@ -108,7 +120,7 @@ bool	CLoadPara::loadStation()
 	}
 
 	m_dacShm.m_ptrCom->info.system.stationNum = maxno + 1;
-	pSql->destroy();
+	//pSql->destroy();
 
 	logprint(LOG_LOADPARA_BASE,"CLoadPara::loadStation() : success, okRows = %d",okRows);
 	return true;
@@ -810,6 +822,7 @@ hInt32 CLoadPara::assignStation(hInt32 no,const CDataset& ds,hInt32 rowIdx)
 		ACE_OS::strncpy(pStation->address,ds.field(rowIdx,"f_staaddress").value().toString().c_str(),DAC_NAME_LEN );
 		ACE_OS::strncpy(pStation->sgzCode,ds.field(rowIdx,"f_sgzcode").value().toString().c_str(),DAC_NAME_LEN );
 		ACE_OS::strncpy(pStation->mrid,ds.field(rowIdx,"f_mrid").value().toString().c_str(),DAC_NAME_LEN );
+		pStation->cmpyid = ds.field(rowIdx,"f_cpyid").value().toInt32();
 
 		retno = realNo;
 	}
