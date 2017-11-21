@@ -86,25 +86,25 @@ int CHisDataTask::svc()
 			{
 				procWaterData();
 			}
-			//统计存盘
-			procStaData();
+			////统计存盘
+			//procStaData();
 
-			//处理蓄电池
-			if ( CONFIG::instance()->hasBattery() )
-			{
-				//蓄电池历史状态表
-				if ( TASK_LOAD::instance()->batteryGroupNum() > 0 )
-					procBatteryYx();
+			////处理蓄电池
+			//if ( CONFIG::instance()->hasBattery() )
+			//{
+			//	//蓄电池历史状态表
+			//	if ( TASK_LOAD::instance()->batteryGroupNum() > 0 )
+			//		procBatteryYx();
 
-				//静态放电数据存充放电表(wfp masked at 20100723)
-				//if ( !CONFIG::instance()->isSaveWater() || TASK_LOAD::instance()->batteryGroupNum() > 0 )
-				//{
-				//	if ( m_timer.time_out(m_staticTimeId) )
-				//	{
-				//		procBatteryChargeData();
-				//	}
-				//}
-			}
+			//	//静态放电数据存充放电表(wfp masked at 20100723)
+			//	//if ( !CONFIG::instance()->isSaveWater() || TASK_LOAD::instance()->batteryGroupNum() > 0 )
+			//	//{
+			//	//	if ( m_timer.time_out(m_staticTimeId) )
+			//	//	{
+			//	//		procBatteryChargeData();
+			//	//	}
+			//	//}
+			//}
 
 		}//end if timeout
 

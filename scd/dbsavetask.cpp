@@ -73,7 +73,7 @@ void CDbSaveTask::stop()
 	if (thr_count() > 0) 
 	{
 		thr_mgr()-> cancel_task(this);
-		saveLeftDataToFile();			//wfp add at 20100104
+		//saveLeftDataToFile();			//wfp add at 20100104
 		wait();
 	}
 }
@@ -122,7 +122,7 @@ int CDbSaveTask::svc()
 			//防止到达高水位
 			if( this->msg_queue()->message_length() >= (HIGH_WATER_MARK*2/3) )
 			{
-				m_hisDataFile.save(messageBlock->rd_ptr(),messageBlock->length());
+				//m_hisDataFile.save(messageBlock->rd_ptr(),messageBlock->length());
 				messageBlock->release();
 				continue;
 			}
@@ -206,140 +206,140 @@ bool CDbSaveTask::saveDb(ACE_Message_Block* pMsgBlock)
 			break;
 		}
 
-	case HIS_CLASS_EVENT:
-		{
-			SCD_DATA_EVENT* pData = (SCD_DATA_EVENT*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
-			if ( !saveHisEvent(pData) )
-			{	
-				logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save event error>");
-				return false;
-			}
-			break;
-		}
-	case HIS_CLASS_DAY_STA:
-		{
-			SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
-			if ( !saveHisDaySta(pData) )
-			{
-				logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 日统计 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);
-				return false;
-			}
-			break;
-		}
-	case HIS_CLASS_MONTH_STA:
-		{
-			SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
-			if ( !saveHisMonthSta(pData) )
-			{
-				logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 月统计 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);
-				return false;
-			}
-			break;
-		}
-	case HIS_CLASS_SEASON_STA:
-		{
-			SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
-			if ( !saveHisSeasonSta(pData) )
-			{
-				logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 季统计 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);
-				return false;
-			}
-			break;
-		}
-	case HIS_CLASS_YEAR_STA:
-		{
-			SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
-			if ( !saveHisYearSta(pData) )
-			{
-				logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 年统计 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);
-				return false;
-			}
-			break;
-		}
-	case HIS_CLASS_RUN:
-		{
-			SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
-			if ( !saveHisBatteryRun(pData) )
-			{
-				logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 运行监测表 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);	
-				return false;
-			}
-			break;
-		}
-	case HIS_CLASS_CHARGE:
-		{
-			SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
-			if ( !saveHisBatteryCharge(pData) )
-			{
-				logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 充放电表 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);	
-				return false;
-			}
-			break;
-		}
-	case HIS_CLASS_DYNAMIC:
-		{
-			SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
-			if ( !saveHisBatteryDynamic(pData) )
-			{
-				logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 动态放电表 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);
-				return false;
-			}
-			break;
-		}
-	case HIS_CLASS_STATE:
-		{
-			SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
-			if ( !saveHisBatteryState(pData) )
-			{
-				logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 历史状态表 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);
-				return false;
-			}
-			break;
-		}
-	case HIS_CLASS_RSYC:    //2017/1/18 by hll 电站区域统计
-		{
+	//case HIS_CLASS_EVENT:
+	//	{
+	//		SCD_DATA_EVENT* pData = (SCD_DATA_EVENT*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
+	//		if ( !saveHisEvent(pData) )
+	//		{	
+	//			logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save event error>");
+	//			return false;
+	//		}
+	//		break;
+	//	}
+	//case HIS_CLASS_DAY_STA:
+	//	{
+	//		SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
+	//		if ( !saveHisDaySta(pData) )
+	//		{
+	//			logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 日统计 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);
+	//			return false;
+	//		}
+	//		break;
+	//	}
+	//case HIS_CLASS_MONTH_STA:
+	//	{
+	//		SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
+	//		if ( !saveHisMonthSta(pData) )
+	//		{
+	//			logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 月统计 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);
+	//			return false;
+	//		}
+	//		break;
+	//	}
+	//case HIS_CLASS_SEASON_STA:
+	//	{
+	//		SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
+	//		if ( !saveHisSeasonSta(pData) )
+	//		{
+	//			logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 季统计 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);
+	//			return false;
+	//		}
+	//		break;
+	//	}
+	//case HIS_CLASS_YEAR_STA:
+	//	{
+	//		SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
+	//		if ( !saveHisYearSta(pData) )
+	//		{
+	//			logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 年统计 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);
+	//			return false;
+	//		}
+	//		break;
+	//	}
+	//case HIS_CLASS_RUN:
+	//	{
+	//		SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
+	//		if ( !saveHisBatteryRun(pData) )
+	//		{
+	//			logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 运行监测表 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);	
+	//			return false;
+	//		}
+	//		break;
+	//	}
+	//case HIS_CLASS_CHARGE:
+	//	{
+	//		SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
+	//		if ( !saveHisBatteryCharge(pData) )
+	//		{
+	//			logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 充放电表 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);	
+	//			return false;
+	//		}
+	//		break;
+	//	}
+	//case HIS_CLASS_DYNAMIC:
+	//	{
+	//		SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
+	//		if ( !saveHisBatteryDynamic(pData) )
+	//		{
+	//			logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 动态放电表 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);
+	//			return false;
+	//		}
+	//		break;
+	//	}
+	//case HIS_CLASS_STATE:
+	//	{
+	//		SCD_DATA_STA* pData = (SCD_DATA_STA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
+	//		if ( !saveHisBatteryState(pData) )
+	//		{
+	//			logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 历史状态表 error>grpno=%d,no=%d,val=%f",(hInt32)pData->group,(hUInt32)pData->data.no,(hFloat)pData->data.val);
+	//			return false;
+	//		}
+	//		break;
+	//	}
+	//case HIS_CLASS_RSYC:    //2017/1/18 by hll 电站区域统计
+	//	{
 
-			HIS_STA_RS_DATA* pData = (HIS_STA_RS_DATA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
-			if ( !saveHisRSYc(pData) )
-			{	
-				logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 电站区域历史遥测 error>rsname=%s,code=%s,val=%f",pData->rsname,pData->code,(hFloat)pData->val);
-				return false;
-			}
-			break;
-		}
-		
-	case HIS_CLASS_RSDAY_STA:   //2017/1/18 by hll 电站区域日数据统计
-		{
+	//		HIS_STA_RS_DATA* pData = (HIS_STA_RS_DATA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
+	//		if ( !saveHisRSYc(pData) )
+	//		{	
+	//			logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 电站区域历史遥测 error>rsname=%s,code=%s,val=%f",pData->rsname,pData->code,(hFloat)pData->val);
+	//			return false;
+	//		}
+	//		break;
+	//	}
+	//	
+	//case HIS_CLASS_RSDAY_STA:   //2017/1/18 by hll 电站区域日数据统计
+	//	{
 
-			HIS_STA_RS_DATA* pData = (HIS_STA_RS_DATA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
-			if ( !saveHisRSDayYcSta(pData) )
-			{	
-				logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 电站区域日统计 error>rsname=%s,code=%s,val=%f",pData->rsname,pData->code,(hFloat)pData->val);
-				return false;
-			}
-			break;
-		}
+	//		HIS_STA_RS_DATA* pData = (HIS_STA_RS_DATA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
+	//		if ( !saveHisRSDayYcSta(pData) )
+	//		{	
+	//			logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 电站区域日统计 error>rsname=%s,code=%s,val=%f",pData->rsname,pData->code,(hFloat)pData->val);
+	//			return false;
+	//		}
+	//		break;
+	//	}
 
-	case HIS_CLASS_DAY_CAL:   //2017/02/10  by hll 电站区域功率最值，区域峰谷值myc
-		{
-			HIS_STA_RS_DATA* pData = (HIS_STA_RS_DATA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
-			if ( !saveHisDayCal(pData) )
-			{	
-				logprint(2018,"<save 电站区域功率最值日统计 error>rsname=%s,code=%s,val=%f",pData->rsname,pData->code,(hFloat)pData->val);
-				return false;
-			}
-			break;
-		}
-	case HIS_CLASS_MONTH_CAL: //2017/02/10  by hll 电站区域功率最值yyc
-		{
-			HIS_STA_RS_DATA* pData = (HIS_STA_RS_DATA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
-			if ( !saveHisMonthCal(pData) )
-			{	
-				logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 电站区域功率最值月统计 error>rsname=%s,code=%s,val=%f",pData->rsname,pData->code,(hFloat)pData->val);
-				return false;
-			}
-			break;
-		}
+	//case HIS_CLASS_DAY_CAL:   //2017/02/10  by hll 电站区域功率最值，区域峰谷值myc
+	//	{
+	//		HIS_STA_RS_DATA* pData = (HIS_STA_RS_DATA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
+	//		if ( !saveHisDayCal(pData) )
+	//		{	
+	//			logprint(2018,"<save 电站区域功率最值日统计 error>rsname=%s,code=%s,val=%f",pData->rsname,pData->code,(hFloat)pData->val);
+	//			return false;
+	//		}
+	//		break;
+	//	}
+	//case HIS_CLASS_MONTH_CAL: //2017/02/10  by hll 电站区域功率最值yyc
+	//	{
+	//		HIS_STA_RS_DATA* pData = (HIS_STA_RS_DATA*)(pMsgBlock->rd_ptr()+sizeof(SCD_DATA_HEAD));
+	//		if ( !saveHisMonthCal(pData) )
+	//		{	
+	//			logprint(LOG_SCD_DBSAVE_TASK_ERR,"<save 电站区域功率最值月统计 error>rsname=%s,code=%s,val=%f",pData->rsname,pData->code,(hFloat)pData->val);
+	//			return false;
+	//		}
+	//		break;
+	//	}
 		
 	default:
 		logprint(LOG_SCD_DBSAVE_TASK_ERR,"<show>unknow data");

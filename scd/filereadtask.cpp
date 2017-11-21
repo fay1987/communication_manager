@@ -71,7 +71,7 @@ int CFileReadTask::svc()
 				continue;
 
 			//±éÀúÎÄ¼ş¼Ğ
-			readFiles();
+			//readFiles();
 		}
 
 	}//end while

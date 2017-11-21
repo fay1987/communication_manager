@@ -20,13 +20,13 @@ CLoadTask::~CLoadTask()
 bool CLoadTask::init()
 {
 	//加载参数
-	if ( !loadDevice() )
-	{
-		return false;
-	}
+	//if ( !loadDevice() )
+	//{
+	//	return false;
+	//}
 
 	loadFormula();		//wlq change at 20160608
-	loadBeginKwh();
+	//loadBeginKwh();
 
 	return true;
 }
@@ -57,13 +57,13 @@ hInt32 CLoadTask::svc()
 
 		ACE_OS::sleep(tv);
 
-		if(	pSystemInfo->loadParaFlag & LOADPARA_DEVICE 
-			||pSystemInfo->loadParaFlag & LOADPARA_DEVICETYPE )
-		{
-			loadDevice();
-			pSystemInfo->loadParaFlag &= ~LOADPARA_DEVICE;
-			pSystemInfo->loadParaFlag &= ~LOADPARA_DEVICETYPE;
-		}
+		//if(	pSystemInfo->loadParaFlag & LOADPARA_DEVICE 
+		//	||pSystemInfo->loadParaFlag & LOADPARA_DEVICETYPE )
+		//{
+		//	loadDevice();
+		//	pSystemInfo->loadParaFlag &= ~LOADPARA_DEVICE;
+		//	pSystemInfo->loadParaFlag &= ~LOADPARA_DEVICETYPE;
+		//}
 
 		//可动态加载计算公式表，但该方式并不稳妥，可能捕获不到loadParaFlag变化
 		if (  PDT_BIT_ENABLED(pSystemInfo->loadParaFlag,LOADPARA_GROUP)
