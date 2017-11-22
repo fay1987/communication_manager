@@ -62,10 +62,10 @@
 //#define	DAC_GROUP_NUM				128		//数据组个数
 //#define	DAC_ROUTE_NUM				160		//路径个数
 #define DAC_STATION_NUM				256			//厂站个数
-#define	DAC_CHANNEL_NUM				256		//通道个数
-#define	DAC_GROUP_NUM				256		//数据组个数
-#define	DAC_ROUTE_NUM				256		//路径个数
-#define DAC_SENDDEV_NUM				256		//监测点个数
+#define	DAC_CHANNEL_NUM				128		//通道个数
+#define	DAC_GROUP_NUM				128		//数据组个数
+#define	DAC_ROUTE_NUM				160		//路径个数
+#define DAC_SENDDEV_NUM				128		//监测点个数
 
 #endif
 
