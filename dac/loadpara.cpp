@@ -233,7 +233,7 @@ bool	CLoadPara::loadRoute()
 	pSql->setTableName("tdac_route");
 	pSql->selectAllField();
 	pSql->whereField("f_routeno",0,CSql::CP_GreaterEqual);
-	pSql->orderField( "f_routeno");
+	pSql->orderField("f_routeno");
 
 	int ret;
 	CDataset ds;
@@ -811,7 +811,10 @@ hInt32 CLoadPara::assignStation(hInt32 no,const CDataset& ds,hInt32 rowIdx)
 	DAC_STATION oldStation,*pStation = &m_dacShm.m_ptrCom->para.station[no];
 
 	memcpy(&oldStation,pStation,sizeof(DAC_STATION));
-	if ( no != realNo )
+	//edit by yaoff on 20171207
+	if ( realNo < 0 )
+	//if ( no != realNo )
+	//edit by yaoff end.
 		memset(pStation,0,sizeof(DAC_STATION));
 	else
 	{
@@ -824,7 +827,10 @@ hInt32 CLoadPara::assignStation(hInt32 no,const CDataset& ds,hInt32 rowIdx)
 		ACE_OS::strncpy(pStation->mrid,ds.field(rowIdx,"f_mrid").value().toString().c_str(),DAC_NAME_LEN );
 		pStation->cmpyid = ds.field(rowIdx,"f_cpyid").value().toInt32();
 
-		retno = realNo;
+		//edit by yaoff on 20171207
+		retno = rowIdx;
+		//retno = realNo;
+		//edit by yaoff end.
 	}
 
 	if ( memcmp(&oldStation,pStation,sizeof(DAC_STATION)) != 0 )
@@ -844,7 +850,10 @@ hInt32 CLoadPara::assignSendDev(hInt32 no,const CDataset& ds,hInt32 rowIdx)
 
 	DAC_SENDDEV *pSdev = &m_dacShm.m_ptrCom->para.senddev[no];
 
-	if ( no != realNo )
+//edit by yaoff on 20171207
+	if ( realNo < 0 )
+	//if ( no != realNo )
+//edit by yaoff end.
 		memset(pSdev,0,sizeof(DAC_SENDDEV));
 	else
 	{
@@ -855,7 +864,11 @@ hInt32 CLoadPara::assignSendDev(hInt32 no,const CDataset& ds,hInt32 rowIdx)
 		ACE_OS::strncpy(pSdev->upseecode,ds.field(rowIdx,"f_upseecode").value().toString().c_str(),DAC_NAME_LEN );
 		ACE_OS::strncpy(pSdev->grpcode,ds.field(rowIdx,"f_grpcode").value().toString().c_str(),DAC_CODE_LEN );
 
-		retno = realNo;
+	//edit by yaoff on 20171207
+		retno = rowIdx;
+		//retno = realNo;
+	//edit by yaoff end.
+		
 	}
 
 	return retno;
@@ -870,7 +883,10 @@ hInt32 CLoadPara::assignChannel(hInt32 no,const CDataset& ds,hInt32 rowIdx)
 	DAC_CHANNEL_INFO* pChannelInfo = &m_dacShm.m_ptrCom->info.channel[no];
 
 	memcpy(&oldChannel,pChannel,sizeof(DAC_CHANNEL));
-	if ( no != realNo )
+	//edit by yaoff on 20171207
+	if ( realNo < 0 )
+	//if ( no != realNo )
+	//edit by yaoff end.
 		memset(pChannel,0,sizeof(DAC_CHANNEL));
 	else
 	{
@@ -893,7 +909,10 @@ hInt32 CLoadPara::assignChannel(hInt32 no,const CDataset& ds,hInt32 rowIdx)
 		pChannel->msgAlarmLevel = ds.field(rowIdx,"f_msgalarmlevel").value().toInt8();
 		pChannel->initState = ds.field(rowIdx,"f_initstate").value().toInt8();
 
-		retno = realNo;
+		//edit by yaoff on 20171207
+		retno = rowIdx;
+		//retno = realNo;
+		//edit by yaoff end.
 	}
 
 	if ( memcmp(&oldChannel,pChannel,sizeof(DAC_CHANNEL)) != 0 )
@@ -937,7 +956,10 @@ hInt32 CLoadPara::assignGroup(hInt32 no,const CDataset& ds,hInt32 rowIdx,bool wi
 	DAC_GROUP_INFO* pGroupInfo = &m_dacShm.m_ptrCom->info.group[no];
 
 	memcpy(&oldGroup,pGroup,sizeof(DAC_GROUP));
-	if ( no != realNo )
+	//edit by yaoff on 20171207
+	if ( realNo < 0 )
+	//if ( no != realNo )
+	//edit by yaoff end.
 	{
 		memset(pGroup,0,sizeof(DAC_GROUP));
 		pGroup->station = -1;	//wfp add at 20100523
@@ -961,7 +983,10 @@ hInt32 CLoadPara::assignGroup(hInt32 no,const CDataset& ds,hInt32 rowIdx,bool wi
 		ACE_OS::strncpy(pGroup->mrid,ds.field(rowIdx,"f_mrid").value().toString().c_str(),DAC_NAME_LEN );
 		pGroup->initState = ds.field(rowIdx,"f_initstate").value().toInt8();
 
-		retno = realNo;
+		//edit by yaoff on 20171207
+		retno = rowIdx;
+		//retno = realNo;
+		//edit by yaoff end.
 	}
 
 	if ( memcmp(&oldGroup,pGroup,sizeof(DAC_GROUP)) != 0 )
@@ -990,7 +1015,10 @@ hInt32 CLoadPara::assignRoute(hInt32 no,const CDataset& ds,hInt32 rowIdx)
 	DAC_ROUTE_INFO* pRouteInfo = &m_dacShm.m_ptrCom->info.route[no];
 
 	memcpy(&oldRoute,pRoute,sizeof(DAC_ROUTE));
-	if ( no != realNo )
+	//edit by yaoff on 20171207
+	if ( realNo < 0 )
+	//if ( no != realNo )
+	//edit by yaoff end.
 	{
 		memset(pRoute,0,sizeof(DAC_ROUTE));
 		pRoute->group = -1;
@@ -1065,7 +1093,10 @@ hInt32 CLoadPara::assignRoute(hInt32 no,const CDataset& ds,hInt32 rowIdx)
 		pRoute->msgAlarmLevel = ds.field(rowIdx,"f_msgalarmlevel").value().toInt8();
 		pRoute->initState = ds.field(rowIdx,"f_initstate").value().toInt8();
 
-		retno = realNo;
+		//edit by yaoff on 20171207
+		retno = rowIdx;
+		//retno = realNo;
+		//edit by yaoff end.
 	}
 
 	if ( memcmp(&oldRoute,pRoute,sizeof(DAC_ROUTE)) != 0 )

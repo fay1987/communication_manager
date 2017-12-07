@@ -15,20 +15,7 @@ using	namespace	PDT;
 #define	DAC_SHM_FILE_SOE		"soe.dat"
 
 
-//notify by wlq 20170307 支持1024通道
-#ifdef _ARM_LINUX
-#define	DAC_YC_NUM				1024		//每个路径数据区预计遥测个数
-#define DAC_YX_NUM				1024		//每个路径数据区预计遥信个数
-#define DAC_KWH_NUM				64			//每个路径数据区预计电度个数
-#else
 
-//以下支持多测点
-#define	DAC_YC_NUM				10240			//每个路径数据区预计遥测个数
-#define DAC_YX_NUM				5120			//每个路径数据区预计遥信个数
-#define DAC_KWH_NUM				128			//每个路径数据区预计电度个数
-
-#endif
-//mondify end by wlq 20170307
 
 #define	DAC_SHM_HEAD_SIZE		256			//内存头大小
 

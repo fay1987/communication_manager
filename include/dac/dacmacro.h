@@ -62,12 +62,27 @@
 //#define	DAC_GROUP_NUM				128		//数据组个数
 //#define	DAC_ROUTE_NUM				160		//路径个数
 #define DAC_STATION_NUM				256			//厂站个数
-#define	DAC_CHANNEL_NUM				128		//通道个数
-#define	DAC_GROUP_NUM				128		//数据组个数
-#define	DAC_ROUTE_NUM				160		//路径个数
-#define DAC_SENDDEV_NUM				128		//监测点个数
+#define	DAC_CHANNEL_NUM				128			//通道个数
+#define	DAC_GROUP_NUM				1280		//数据组个数
+#define	DAC_ROUTE_NUM				1280		//路径个数
+#define DAC_SENDDEV_NUM				1280		//监测点个数
 
 #endif
+
+//notify by wlq 20170307 支持1024通道
+#ifdef _ARM_LINUX
+#define	DAC_YC_NUM				1024		//每个路径数据区预计遥测个数
+#define DAC_YX_NUM				1024		//每个路径数据区预计遥信个数
+#define DAC_KWH_NUM				64			//每个路径数据区预计电度个数
+#else
+
+//以下支持多测点
+#define	DAC_YC_NUM				512			//每个路径数据区预计遥测个数
+#define DAC_YX_NUM				256			//每个路径数据区预计遥信个数
+#define DAC_KWH_NUM				16			//每个路径数据区预计电度个数
+
+#endif
+//mondify end by wlq 20170307
 
 
 #define	DAC_PROTOCOL_NUM			128			//规约个数
