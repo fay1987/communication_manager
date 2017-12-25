@@ -1028,6 +1028,8 @@ bool CDbSaveTask::checkYcProcedure(hUInt32 year,hUInt32 month)
 	//	logprint(LOG_SCD_DBSAVE_TASK_ERR,"Ö´ÐÐ´æ´¢¹ý³Ì<%s> error",sql);
 	//	return false;
 	//}
+
+#ifdef _ARM_LINUX
 	CDateTime dt;
 	dt.year(year);
 	dt.month(month);
@@ -1047,7 +1049,7 @@ bool CDbSaveTask::checkYcProcedure(hUInt32 year,hUInt32 month)
 		}
 	}
 
-
+#endif
 	return true;
 }
 
