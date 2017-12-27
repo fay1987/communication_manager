@@ -186,6 +186,7 @@ void CProcessManage::startProc(const char *name,const char *desc,
 			ACE_OS::strncpy(m_pProcInfoVec[i].desc,desc,SYS_DESC_LEN);
 			m_pProcInfoVec[i].startTime = (hUInt32)cur_time;
 			m_pProcInfoVec[i].updateTime = (hUInt32)cur_time;
+			m_pProcInfoVec[i].updatenum = 0;
 			createProcEvent(name,desc,PROCESS_START);
 			m_order = i;
 			return;
@@ -203,6 +204,7 @@ void CProcessManage::startProc(const char *name,const char *desc,
 			ACE_OS::strncpy(m_pProcInfoVec[i].desc,desc,SYS_DESC_LEN);
 			m_pProcInfoVec[i].startTime = cur_time;
 			m_pProcInfoVec[i].updateTime = cur_time;
+			m_pProcInfoVec[i].updatenum = 0;
 			createProcEvent(name,desc,PROCESS_START);
 			m_order = i;
 			return;
@@ -223,6 +225,7 @@ void CProcessManage::startProc(const char *name,const char *desc,
 		ACE_OS::strncpy(m_pEisdInfo->desc,desc,SYS_DESC_LEN);
 		m_pEisdInfo->startTime = (hUInt32)cur_time;
 		m_pEisdInfo->updateTime = (hUInt32)cur_time;
+		m_pEisdInfo->updatenum = 0;
 	}
 }
 
@@ -249,6 +252,7 @@ void CProcessManage::endInitProc()
 
 	//更新注册当前进程
 	m_pProcInfoVec[m_order].updateTime = (hUInt32)time(NULL);
+	m_pProcInfoVec[m_order].updateTime = 10*PROC_MAX_DEAD_TIME;
 
 	m_pProcInfoVec[m_order].isIniting = false;
 }
@@ -324,6 +328,7 @@ void CProcessManage::checkProcState()
 	//更新eisd的时间
 	time_t curTime = time(NULL);
 	m_pEisdInfo->updateTime = (hUInt32)curTime;
+	m_pEisdInfo->updatenum = 0;
 
 	//check 注册进程
 	for(int i=0;i<PROC_MAX_NUM;i++)
@@ -352,7 +357,8 @@ void CProcessManage::checkProcState()
 				continue;
 			}
 #endif
-			if ( ((hUInt32)curTime - m_pProcInfoVec[i].updateTime) >= 3*PROC_MAX_DEAD_TIME )
+			if(m_pProcInfoVec[i].updatenum >= 3*PROC_MAX_DEAD_TIME)
+			//if ( ((hUInt32)curTime - m_pProcInfoVec[i].updateTime) >= 3*PROC_MAX_DEAD_TIME )
 			{
 				logprint(LOG_PROC_KILL,"proc <%s> time out________pid = %d\n",m_pProcInfoVec[i].name,(int)m_pProcInfoVec[i].pid);
 				if( isProcExist(m_pProcInfoVec[i].name) )
@@ -374,17 +380,19 @@ int CProcessManage::checkEisd()
 {
 	if(m_pEisdInfo->flag == FALSE)	return	FALSE;
 
-	time_t curTime = time(NULL);
+	//time_t curTime = time(NULL);
 
-	if ( ((hUInt32)curTime - m_pEisdInfo->updateTime) >= 2*PROC_MAX_DEAD_TIME )
+	//if ( ((hUInt32)curTime - m_pEisdInfo->updateTime) >= 2*PROC_MAX_DEAD_TIME )
+	if ( m_pEisdInfo->updatenum >= 2*PROC_MAX_DEAD_TIME)
 		return FALSE;
 	else	
 	{
 		if ( m_order < 0 || m_order >=PROC_MAX_NUM ) return FALSE;
 
 		//更新注册当前进程
-		m_pProcInfoVec[m_order].updateTime = (hUInt32)curTime;
-		logprint(LOG_PROC_NORMAL,"进程名 = %s , time = %d", m_pProcInfoVec[m_order].name,(int)curTime);
+		//m_pProcInfoVec[m_order].updateTime = (hUInt32)curTime;
+		m_pProcInfoVec[m_order].updatenum = 0;
+		logprint(LOG_PROC_NORMAL,"进程名 = %s , time = %d", m_pProcInfoVec[m_order].name, m_pProcInfoVec[m_order].updatenum);
 	}
 
 	return	TRUE;

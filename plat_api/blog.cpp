@@ -110,7 +110,7 @@ char *CLogInfo::readLog(int &type,char *loghead,BLOG_DATA **data,int flag)
 		CDateTime* pDateTime = &(m_ptr->data[oldReadPos].dateTime);
 		//保证下条语句输入的字符串长度小于LOG_HEAD_LEN
 		ACE_OS::snprintf(loghead,BLOG_HEAD_LEN,"[ %s ] , Type = %d,Process = %s\n", 
-			m_ptr->data[oldReadPos].dateTime.toString(DT_FMT_DEF).c_str(),
+			m_ptr->data[oldReadPos].dateTime.toString(DT_FMT_MS).c_str(),
 			(int)m_ptr->data[oldReadPos].type,m_ptr->data[oldReadPos].procName);
 	}
 	if(data)	*data = &m_ptr->data[oldReadPos];
@@ -152,7 +152,7 @@ bool CLogInfo::readLog(int readPos,int& type,char *data/* =NULL */,char *procNma
 		CDateTime* pDateTime = &(m_ptr->data[readPos].dateTime);
 		//保证下条语句输入的字符串长度小于LOG_HEAD_LEN
 		ACE_OS::snprintf(loghead,BLOG_HEAD_LEN,"[ %s ] , Type = %d,Process = %s\n", 
-			m_ptr->data[readPos].dateTime.toString(DT_FMT_DEF).c_str(),
+			m_ptr->data[readPos].dateTime.toString(DT_FMT_MS).c_str(),
 			(int)m_ptr->data[readPos].type,m_ptr->data[readPos].procName);
 	}
 
@@ -228,7 +228,7 @@ void CLogInfo::writeError(int type,const char *format,...)
 
 	//保证下条语句输入的字符串长度小于LOG_HEAD_LEN
 	ACE_OS::sprintf(loghead,"[ %s ] , Type = %d , ProcessName = %s\n",
-							curDateTime.toString(DT_FMT_DEF).c_str(),
+							curDateTime.toString(DT_FMT_MS).c_str(),
 							(int)type,m_procName); 
 
 	if( ACE_OS::filesize(filename) > BLOG_FILE_LEN )	

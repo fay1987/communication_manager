@@ -1,7 +1,7 @@
 #include "winprocess.h"
 #include "sys/sysmacro.h"
-
-Win95_enumerator::Win95_enumerator():kernel(GetModuleHandle("KERNEL32.DLL")) 
+#include <tchar.h>
+Win95_enumerator::Win95_enumerator():kernel(GetModuleHandle("KERNEL32.DLL") )
 {
 	if(kernel == NULL)
 	{

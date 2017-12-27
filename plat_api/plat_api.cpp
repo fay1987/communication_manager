@@ -16,7 +16,6 @@
 #include <dirent.h>
 #endif
 
-
 int killProc(int pid)
 {
 	if(pid <= 0)	return FALSE;
