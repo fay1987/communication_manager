@@ -4729,7 +4729,8 @@ bool PDT::CProto_Modbus_101::editRdevFqcy(int frequency)
 	m_current_send_cmd.length = nLength;
 
 
-	ACE_OS::strncpy(m_current_send_cmd.cmdStr, "", PMC_DESCRIBE_STRING_LENGTH);
+	QString str = QString("set rdev frequency %1").arg(frequency);
+	ACE_OS::strncpy(m_current_send_cmd.cmdStr, str.toStdString().c_str(), PMC_DESCRIBE_STRING_LENGTH);
 
 	return true;
 }
@@ -4786,6 +4787,9 @@ bool PDT::CProto_Modbus_101::editSdevFqcy()
 	m_current_send_cmd.cmd[i++] = HIBYTE(crc);
 	m_current_send_cmd.cmd[i++] = LOBYTE(crc);
 	m_current_send_cmd.length = i;
+
+	QString strDesc = QString("set sdev frequency %1 rtu %2").arg(m_pSdev->frequency).arg(m_pSdev->rtu);
+	ACE_OS::strncpy(m_current_send_cmd.cmdStr, strDesc.toStdString().c_str(), PMC_DESCRIBE_STRING_LENGTH);
 
 	return TRUE;
 }
