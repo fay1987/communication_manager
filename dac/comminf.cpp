@@ -133,6 +133,22 @@ const DAC_SENDDEV* CCommInf::senddev(hInt32 no/* =0 */,bool isValidCheck /* = tr
 	return 0;
 }
 
+
+DAC_RECVDEV* CCommInf::getRecvdevbychan(hInt32 no)
+{
+	if (m_pComPara == NULL || m_pComInfo == NULL) return 0;
+	if (no < 0 || no >= m_pComInfo->system.channelNum) return 0;
+	DAC_CHANNEL* chanptr = channel(no);
+
+	for (int i = 0; i < m_pComInfo->system.recvdevNum; i++)
+	{
+		if (strcmp(chanptr->code,m_pComPara->recvdev[i].chancode) == 0 )
+			return &m_pComPara->recvdev[i];
+	}
+
+	return 0;
+}
+
 DAC_SENDDEV* CCommInf::getSenddevbygroup(hInt32 no)
 {
 	if (m_pComPara == NULL || m_pComInfo == NULL) return 0;
@@ -1037,4 +1053,37 @@ DAC_YCCON* PDT::CCommInf::yccon( int ntype )
 		}
 	}
 	return NULL;
+}
+
+hInt32 PDT::CCommInf::recvdevNo( const char* code ) const
+{
+	if (m_pComPara == NULL || m_pComInfo == NULL) return -1;
+
+	if (code == 0) return -1;
+
+	for (hUInt32 i=0;i<m_pComInfo->system.recvdevNum;i++)
+	{
+		if ( strcmp(code,m_pComPara->recvdev[i].code) == 0 )
+			return i;
+	}
+
+	return -1;
+}
+
+DAC_RECVDEV_INFO* PDT::CCommInf::rdevInfo( hInt32 no /*= 0*/,bool isValidCheck /*= true*/ )
+{
+	if (m_pComPara == NULL || m_pComInfo == NULL) return 0;
+
+	if (!isValidCheck) 
+	{
+		if (no < 0 || no >= m_pComInfo->system.recvdevNum) return 0;
+		return &m_pComInfo->recvdev[no];
+	}
+
+	if (m_pComPara->recvdev[no].valid)
+	{
+		return &m_pComInfo->recvdev[no];
+	}
+
+	return 0;
 }

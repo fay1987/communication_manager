@@ -62,6 +62,7 @@ bool	CLoadPara::loadAll()
 	loadYk();
 	loadYt();
 	loadYccon();
+	loadRecvDev();
 	loadSendDev();
 
 	return true;
@@ -330,6 +331,45 @@ bool	CLoadPara::loadProtocol()
 	return true;
 }
 
+bool	CLoadPara::loadRecvDev()
+{
+
+	int ret;
+	CDataset ds;
+
+	char sqlStr[512] = "";
+	ACE_OS::sprintf(sqlStr, "select * from tdac_recvdev,tdac_channel where tdac_recvdev.f_rdevaddr = tdac_channel.f_remoteaddr1");
+
+	ret = m_pRdbOp->exec(sqlStr, ds);
+
+	if ( ret < 0 )
+	{
+		logprint(LOG_LOADPARA_BASE,"CLoadPara::loadRecvDev() : m_pRdbOp->exec( *pSql,ds) failed");
+		return false;
+	}
+
+	int i,j,retno,okRows=0;
+	int maxno = -1;
+
+	for ( i=0,j=0;i<DAC_RECVDEV_NUM;i++ )
+	{
+		retno = assignRecvDev(i,ds,j);
+		if ( retno >= 0 )
+		{
+			j++;
+			okRows++;
+			if ( retno > maxno )
+				maxno = retno;
+		}
+	}
+
+	m_dacShm.m_ptrCom->info.system.recvdevNum = maxno + 1;
+
+	logprint(LOG_LOADPARA_BASE,"CLoadPara::loadStation() : success, okRows = %d",okRows);
+	return true;
+}
+
+
 bool	CLoadPara::loadSendDev()
 {
 	CSql* pSql = m_pRdbOp->createSQL();
@@ -358,6 +398,15 @@ bool	CLoadPara::loadSendDev()
 	int i,j,retno,okRows=0;
 	int maxno = -1;
 
+	DAC_RECVDEV_INFO *pRdevInfo = NULL;
+	for ( i=0;i<DAC_RECVDEV_NUM;i++ )
+	{
+		pRdevInfo = &m_dacShm.m_ptrCom->info.recvdev[i];
+		pRdevInfo->SdevNum = 0;
+		for ( j=0;j<DAC_ROUTE_IN_CHANNEL;j++ )
+			pRdevInfo->sdevs[j] = -1;
+	}
+
 	for ( i=0,j=0;i<DAC_SENDDEV_NUM;i++ )
 	{
 		retno = assignSendDev(i,ds,j);
@@ -378,6 +427,7 @@ bool	CLoadPara::loadSendDev()
 	logprint(LOG_LOADPARA_BASE,"CLoadPara::loadStation() : success, okRows = %d",okRows);
 	return true;
 }
+
 
 bool	CLoadPara::loadYc(const char* group /*= 0*/)
 {
@@ -841,6 +891,39 @@ hInt32 CLoadPara::assignStation(hInt32 no,const CDataset& ds,hInt32 rowIdx)
 	return retno;
 }
 
+hInt32 CLoadPara::assignRecvDev(hInt32 no,const CDataset& ds,hInt32 rowIdx)
+{
+	int retno = -1, realNo = -1;
+	if ( rowIdx >=0 && rowIdx < ds.rowSize() )
+		realNo = ds.field(rowIdx,"f_rdevid").value().toInt32();
+
+	DAC_RECVDEV *pRdev = &m_dacShm.m_ptrCom->para.recvdev[no];
+
+	//edit by yaoff on 20171207
+	if ( realNo < 0 )
+		//if ( no != realNo )
+		//edit by yaoff end.
+		memset(pRdev,0,sizeof(DAC_RECVDEV));
+	else
+	{
+		pRdev->valid = true;
+		pRdev->recvno = no;
+		ACE_OS::strncpy(pRdev->code,ds.field(rowIdx,"f_rdevcode").value().toString().c_str(),DAC_CODE_LEN );
+		ACE_OS::strncpy(pRdev->name,ds.field(rowIdx,"f_rdevname").value().toString().c_str(),DAC_NAME_LEN );
+		ACE_OS::strncpy(pRdev->chancode,ds.field(rowIdx,"f_chancode").value().toString().c_str(),DAC_CODE_LEN );
+		pRdev->frequency = ds.field(rowIdx,"f_band").value().toInt32();
+		pRdev->isInit = (hBool)ds.field(rowIdx,"f_isInit").value().toInt8();
+
+		//edit by yaoff on 20171207
+		retno = rowIdx;
+		//retno = realNo;
+		//edit by yaoff end.
+
+	}
+
+	return retno;
+}
+
 
 hInt32 CLoadPara::assignSendDev(hInt32 no,const CDataset& ds,hInt32 rowIdx)
 {
@@ -857,12 +940,36 @@ hInt32 CLoadPara::assignSendDev(hInt32 no,const CDataset& ds,hInt32 rowIdx)
 		memset(pSdev,0,sizeof(DAC_SENDDEV));
 	else
 	{
+
+		hInt32	rdevNo;
+		DAC_RECVDEV_INFO* pRdevInfo = NULL;
+
+		rdevNo = m_commInf.recvdevNo( ds.field(rowIdx,"f_rdevcode").value().toString().c_str() );
+
+		if ( rdevNo < 0 || rdevNo >= DAC_RECVDEV_NUM )
+			rdevNo = -1;
+		else
+		{
+			pRdevInfo = &m_dacShm.m_ptrCom->info.recvdev[rdevNo];
+			if ( pRdevInfo->SdevNum < DAC_ROUTE_IN_CHANNEL )
+			{
+				pRdevInfo->sdevs[pRdevInfo->SdevNum] = no;
+				pRdevInfo->SdevNum++;
+			}
+		}
+
 		pSdev->valid = true;
-		pSdev->seeno =  ds.field(rowIdx,"f_sdevid").value().toInt32();
+		pSdev->seeno =  no;
 		ACE_OS::strncpy(pSdev->code,ds.field(rowIdx,"f_sdevcode").value().toString().c_str(),DAC_CODE_LEN );
 		ACE_OS::strncpy(pSdev->name,ds.field(rowIdx,"f_sdevname").value().toString().c_str(),DAC_NAME_LEN );
 		ACE_OS::strncpy(pSdev->upseecode,ds.field(rowIdx,"f_upseecode").value().toString().c_str(),DAC_NAME_LEN );
+		ACE_OS::strncpy(pSdev->rdevcode,ds.field(rowIdx,"f_rdevcode").value().toString().c_str(),DAC_NAME_LEN );
 		ACE_OS::strncpy(pSdev->grpcode,ds.field(rowIdx,"f_grpcode").value().toString().c_str(),DAC_CODE_LEN );
+		pSdev->frequency = ds.field(rowIdx,"f_band").value().toInt32();
+		pSdev->rtu = ds.field(rowIdx,"f_rtu").value().toInt32();
+		pSdev->isInit = (hBool)ds.field(rowIdx,"f_isInit").value().toInt8();
+		ACE_OS::strncpy(pSdev->cmac,ds.field(rowIdx,"f_mac").value().toString().c_str(),DAC_MACADDRESS_LEN);
+		
 
 	//edit by yaoff on 20171207
 		retno = rowIdx;
@@ -873,6 +980,8 @@ hInt32 CLoadPara::assignSendDev(hInt32 no,const CDataset& ds,hInt32 rowIdx)
 
 	return retno;
 }
+
+
 hInt32 CLoadPara::assignChannel(hInt32 no,const CDataset& ds,hInt32 rowIdx)
 {
 	int retno = -1, realNo = -1;
