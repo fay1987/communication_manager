@@ -74,6 +74,7 @@ typedef struct _proc_check_info_
 	bool		isIniting;	//是否正在初始化(wfp add)
 	hUInt32 	startTime;
 	hUInt32		updateTime;	//进程更新时间	
+	hUInt32		updatenum;	//用于进程更新计数
 	char		name[SYS_PROCNAME_LEN];
 	char		desc[SYS_DESC_LEN];
 }proc_check_info;
