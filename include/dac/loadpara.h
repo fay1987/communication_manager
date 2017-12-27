@@ -49,6 +49,8 @@ namespace PDT
 		bool	loadYt();
 		//加载测点模型表
 		bool	loadYccon();
+		//加载接收装置表
+		bool	loadRecvDev();
 		//加载监测装置表
 		bool	loadSendDev();
 
@@ -62,6 +64,7 @@ namespace PDT
 		hInt32 assignGroup(hInt32 no,const CDataset& ds,hInt32 rowIdx,bool withData=true);
 		hInt32 assignRoute(hInt32 no,const CDataset& ds,hInt32 rowIdx);
 		hInt32 assignProtocol(hInt32 no,const CDataset& ds,hInt32 rowIdx);
+		hInt32 assignRecvDev(hInt32 no,const CDataset& ds,hInt32 rowIdx);
 		hInt32 assignSendDev(hInt32 no,const CDataset& ds,hInt32 rowIdx);
 
 	};

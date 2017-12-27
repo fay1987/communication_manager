@@ -76,6 +76,18 @@ typedef struct _dac_station_
 	int			cmpyid;									//企业标识
 }DAC_STATION;
 
+typedef	struct _dac_recvdev_
+{
+	hBool		valid;									//有效标志
+	char		code[DAC_CODE_LEN];						//编码
+	char		name[DAC_NAME_LEN];						//名称
+	hInt32		recvno;									//接收装置编号
+	char		addr[DAC_ADDR_LEN];						//上级监控点编号
+	int			frequency;								//频率
+	hBool		isInit;									//是否根据配置修改过下位机频率地址
+	char		chancode[DAC_CODE_LEN];					//所属通道
+}DAC_RECVDEV;
+
 typedef	struct _dac_senddev_
 {
 	hBool		valid;									//有效标志
@@ -83,6 +95,11 @@ typedef	struct _dac_senddev_
 	char		name[DAC_NAME_LEN];						//名称
 	hInt32		seeno;									//监控点编号
 	char		upseecode[DAC_CODE_LEN];				//上级监控点编号
+	char		rdevcode[DAC_CODE_LEN];					//对应接收装置
+	char 		cmac[DAC_MACADDRESS_LEN];
+	int			frequency;
+	int			rtu;
+	hBool		isInit;									//是否根据配置修改过下位机频率地址
 	char		grpcode[DAC_CODE_LEN];					//所属数据组
 }DAC_SENDDEV;
 
@@ -306,6 +323,7 @@ typedef	struct _dac_system_info_
 {
 	hBool			serverFlag;					//是否是DAC服务器
 	hUInt32			stationNum;					//系统实际厂站数码
+	hUInt32			recvdevNum;					//系统接收装置数量
 	hUInt32			senddevNum;					//系统实际监测点数目
 	hUInt32			channelNum;					//系统实际通道数目
 	hUInt32			groupNum;					//系统实际数据组数目
@@ -330,6 +348,17 @@ typedef struct _dac_channel_info_
 	nUInt32			routeNum;					//与通道相连的路径个数
 	nInt32			routes[DAC_ROUTE_IN_CHANNEL];//与通道相连的路径号	
 }DAC_CHANNEL_INFO;
+
+
+
+//接收装置
+typedef struct _dac_recvdev_info_
+{
+	nInt32			channo;							//对应的通道号
+	nUInt32			SdevNum;						//与接收装置相连接的发送装置个数
+	nInt32			sdevs[DAC_ROUTE_IN_CHANNEL];	//与接收装置相连的发送装置号	
+}DAC_RECVDEV_INFO;
+
 //数据组信息
 typedef struct _dac_group_info_
 {
@@ -475,6 +504,7 @@ typedef	struct _dac_com_para_
 	DAC_SYSTEM			system;							//系统参数
 	DAC_STATION			station[DAC_STATION_NUM];		//厂站表
 	DAC_SENDDEV			senddev[DAC_SENDDEV_NUM];		//监测点
+	DAC_RECVDEV         recvdev[DAC_RECVDEV_NUM];		//接收装置
 	DAC_CHANNEL			channel[DAC_CHANNEL_NUM];		//通道表
 	DAC_GROUP			group[DAC_GROUP_NUM];			//数据组表
 	DAC_ROUTE			route[DAC_ROUTE_NUM];			//路径表
@@ -499,6 +529,7 @@ typedef	struct _dac_com_info_
 	DAC_RECV_BUFFER		recvBuffer[DAC_CHANNEL_NUM];	//接收报文缓冲区
 	DAC_SEND_BUFFER		sendBuffer[DAC_CHANNEL_NUM];	//发送报文缓冲区
 	DAC_MESSAGE_BUFFER	messageBuf[DAC_ROUTE_NUM];		//解析后报文缓冲区
+	DAC_RECVDEV_INFO	recvdev[DAC_RECVDEV_NUM];		//接收装置表
 }DAC_COM_INFO;
 //---------------------------------------------------------------------------------------
 //公共共享内存

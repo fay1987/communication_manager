@@ -133,6 +133,7 @@ hInt32 CLoadTask::svc()
 			{
 				logprint(LOG_DACSRV_BASE,"dacsrv:正在装载channel表 !");
 				m_loadPara.loadChannel();
+				m_loadPara.loadRecvDev();
 				pSystemInfo->loadParaFlag &= ~LOADPARA_CHANNEL;
 				pSystemInfo->loadParaFlag |=LOADPARA_ROUTE;
 				m_loadPara.loadRoute();

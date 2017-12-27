@@ -45,6 +45,7 @@ namespace	PDT
 		LOADPARA_DEVICEPARA		=	0x00002000,	//设备参数表--scd使用
 		LOADPARA_YK				=	0x00004000,	//遥控表
 		LOADPARA_YT				=	0x00008000,	//遥调表
+		LOADPARA_WEBSERVER		=	0x00010000,	//通知gtwebserver程序重新加载
 		LOADPARA_ALL			=	0xFFFFFFFF	//全部加载
 	};
 	//通道状态

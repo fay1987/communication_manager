@@ -25,6 +25,7 @@
 #define DAC_PWD_LEN					64			//密码长度	
 #define	DAC_ADDR_LEN				32			//地址长度
 #define	DAC_HOSTNAME_LEN			32			//主机名长度
+#define DAC_MACADDRESS_LEN			12			//mac地址长度
 
 #ifdef _ARM_LINUX
 #define	DAC_ROUTE_IN_CHANNEL		16			//每CHANNEL支持挂接的路径数
@@ -54,7 +55,7 @@
 #define	DAC_GROUP_NUM				128		//数据组个数
 #define	DAC_ROUTE_NUM				128		//路径个数
 #define DAC_SENDDEV_NUM				128		//监测点个数
-
+#define DAC_RECVDEV_NUM				5		//接收装置个数
 #else
 
 //#define DAC_STATION_NUM				256			//厂站个数
@@ -66,6 +67,7 @@
 #define	DAC_GROUP_NUM				1280		//数据组个数
 #define	DAC_ROUTE_NUM				1280		//路径个数
 #define DAC_SENDDEV_NUM				1280		//监测点个数
+#define DAC_RECVDEV_NUM				5			//接收装置个数
 
 #endif
 

@@ -52,6 +52,7 @@ namespace	PDT
 		RecordsData_YX,
 		RecordsData_Para,
 		RecordsData_Record,
+		EditDFqcy,			//修改下位机频率地址
 	};
 
 	enum ManualCommandType
@@ -63,7 +64,9 @@ namespace	PDT
 		CTRL_PRO_CALLELEC				/*= 218*/,		//召唤电能
 		CTRL_PRO_CALLHMC				/*=	219*/,		//召唤谐波
 		CTRL_PRO_UDP					/*= 220*/,		//发送广播
-		CTRL_PRO_EDITPRAR				/*= 221*/		//修改下位机频段地址
+		CTRL_PRO_EDITPRAR				/*= 221*/,		//修改上位机频段地址
+		CTRL_PRO_EDITUDP				/*= 222*/,		//修改下位机频段地址
+		CTRL_PRO_EDITPRAR1				/*= 223*/		//根据一键生成文件修改上位机频段地址
 	};
 
 #define LOG_PROTOCOL											20000
@@ -172,7 +175,7 @@ namespace	PDT
 
 	struct sendpara
 	{
-		char 	cmac[12];
+		char 	cmac[DAC_MACADDRESS_LEN];
 		int		frequency;
 		int		rtu;
 	};
@@ -239,6 +242,8 @@ namespace	PDT
 		void			resolve_discrete(PMC_Feature_ptr p);
 		void			resolve_control(PMC_Feature_ptr p);
 		void			resolve_setvalue(PMC_Feature_ptr p);
+		bool			resolve_SdevFqcy(PMC_Feature_ptr p);
+
 
 		//其他操作
 		void			clearRecvMsg(){ memset( &m_recv_msg, 0, sizeof( PMC_Recv_Msg ) );}
@@ -268,8 +273,9 @@ namespace	PDT
 		bool					sendUdp();
 		void					resolve_callYcCommand(PMC_Feature_ptr p);
 		bool					editpara(ctrl_pro_constantvalue* pCom);
-
-
+		bool					editSdevFqcy();
+		bool					editRdevFqcy(int frequency);
+		bool					readfile_senddev();
 
 		hBool							m_open;
 		hBool							m_islisting;												/*该规约是否监听模式			*/
@@ -315,7 +321,11 @@ namespace	PDT
 		PMC_Feature_ptr					m_pcmd;	
 
 		int								m_nflag;
-		CRdbOp*							m_pRdbOp;
+		int								m_nFqcy;
+
+		//CRdbOp*							m_pRdbOp;
+		DAC_SENDDEV*					m_pSdev;
+		DAC_RECVDEV*					m_pRdev;
 	};
 }
 #endif	//_PDT_DAC_MODBUS_101_H_

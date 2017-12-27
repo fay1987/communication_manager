@@ -484,6 +484,7 @@ hUInt8 CStateTask::routeStateWithChanUp(int routeNo)
 		
 		//add by yaoff on 20170922
 
+#ifdef _ARM_LINUX
 		//处理虚拟遥信
 		DAC_GROUP* pGroup = m_commInf.group(pRoute->group);
 		int yxno = -1;
@@ -513,12 +514,18 @@ hUInt8 CStateTask::routeStateWithChanUp(int routeNo)
 			m_dataInf.setYx(routeNo, yxno, data);
 		}
 		//add end.
+
+#endif
 		return newState;
 	}
 	else
 	{
+		
+#ifdef _ARM_LINUX
+
 		logprint(LOG_DACSRV_STATETASK,"yx=1  RouteNo = %d , %s , ---->%s\n",routeNo,pRoute->name,
 			CStateFormat::routeStateDesc(newState).c_str());
+
 		//处理虚拟遥信
 		DAC_GROUP* pGroup = m_commInf.group(pRoute->group);
 		int yxno = -1;
@@ -541,6 +548,7 @@ hUInt8 CStateTask::routeStateWithChanUp(int routeNo)
 			m_dataInf.setYx(routeNo, yxno, data);
 		}
 		//add end.
+#endif
 	}
 
 	//wfp new add
