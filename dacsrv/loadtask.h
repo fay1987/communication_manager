@@ -48,7 +48,6 @@ private:
 	int					m_timeId;
 
 	int m_timeOutID;
-	//int m_recOutID;
 };
 
 #endif //_PDT_DAC_LOADTASK_H_

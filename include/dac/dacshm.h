@@ -19,6 +19,7 @@
 #include <ace/Process_Mutex.h>
 #include "dac/dac_export.h"
 #include "dac/dac.h"
+#include "ace/Global_Macros.h"
 
 namespace PDT
 {

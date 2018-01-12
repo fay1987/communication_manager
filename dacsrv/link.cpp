@@ -61,14 +61,6 @@ bool CLink::initProtocol(hInt32 routeOrder)
 	char			dllName[MAXPATHLEN+MAXNAMELEN];
 	ACE_DLL			dllProtocol;
 
-//#ifdef WIN32 && PDT_DEBUG
-//	ACE_OS::sprintf(dllName,"%s\\dll\\pd_%s.dll",ACE_OS::getenv(SYS_ENV_VAR),pProtocol->libName);
-//#elif defined WIN32 
-//	ACE_OS::sprintf(dllName,"%s\\dll\\%s.dll",ACE_OS::getenv(SYS_ENV_VAR),pProtocol->libName);
-//#else
-//	ACE_OS::sprintf(dllName,"%s/lib/lib%s.so",ACE_OS::getenv(SYS_ENV_VAR),pProtocol->libName);
-//#endif
-
 #ifdef WIN32 
 	ACE_OS::sprintf(dllName,"%s\\dll\\%s.dll",ACE_OS::getenv(SYS_ENV_VAR),pProtocol->libName);
 #else
@@ -253,7 +245,7 @@ void CLink::run()
 			{
 				if(!pRouteInfo->switchFlag)
 				{
-					if (m_bTimeOut)
+					if ((CONFIG::instance()->timeinterval() > 0) && m_bTimeOut)
 					{
 						//m_pProtocol[pChannelInfo->curRouteOrder]->setTimeOut();
 						//hInt32 routeno = pChannelInfo->routes[pChannelInfo->curRouteOrder];
@@ -310,12 +302,21 @@ void CLink::run()
 				if(( ACE_OS::gettimeofday() - m_curRouteBegin).msec() > pChannel->switchTimeOut * 1000 
 				||  pRouteInfo->switchFlag)
 				{
-					m_pProtocol[pChannelInfo->curRouteOrder]->setTimeOut();
-					//pRouteInfo->switchFlag = true;
-					if (!(m_pProtocol[pChannelInfo->curRouteOrder]->isExclusive()))
+					if(CONFIG::instance()->timeinterval() > 0)
 					{
+						m_pProtocol[pChannelInfo->curRouteOrder]->setTimeOut();
+						if (!(m_pProtocol[pChannelInfo->curRouteOrder]->isExclusive()))
+						{
+							pChannelInfo->curRouteOrder = (pChannelInfo->curRouteOrder + 1) % pChannelInfo->routeNum;
+						}
+					}
+					else
+					{
+						pRouteInfo->switchFlag = true;
 						pChannelInfo->curRouteOrder = (pChannelInfo->curRouteOrder + 1) % pChannelInfo->routeNum;
 					}
+					
+
 					m_curRouteBegin = ACE_OS::gettimeofday();	//新curRoute开始计时
 
 					CDateTime tNow = CDateTime::currentDateTime();

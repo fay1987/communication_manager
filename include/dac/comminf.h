@@ -34,8 +34,12 @@ namespace PDT
 			
 			DAC_SENDDEV*			senddev(hInt32 no =0,bool isValidCheck = true);
 			const DAC_SENDDEV*		senddev(hInt32 no =0 ,bool isValidCheck = true) const;
+			DAC_SENDDEV*			senddev(const char* code,bool isValidCheck = true);
+			const DAC_SENDDEV*		senddev(const char* code,bool isValidCheck = true) const;
+
 			DAC_RECVDEV*			getRecvdevbychan(hInt32 no);				//根据通道号获取对应的接收装置
 			DAC_SENDDEV*			getSenddevbygroup(hInt32 no);				//根据数据组号获取对应的发送装置
+			
 
 
 			DAC_CHANNEL*			channel(const char* code,bool isValidCheck = true);		/*根据编码获取通道参数的共享内存地址*/
@@ -104,6 +108,7 @@ namespace PDT
 			hInt32			groupNo(const char* code) const;
 			hInt32			routeNo(const char* code) const;
 			hInt32			protocolNo(const char* code) const;
+			hInt32			senddevNo(const char* code) const;
 			hInt32			recvdevNo(const char* code) const;
 
 			hInt32			groupNoOfRoute(hInt32 routeNo,bool isValidCheck = true);

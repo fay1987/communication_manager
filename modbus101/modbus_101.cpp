@@ -326,7 +326,11 @@ void CProto_Modbus_101::mainTx()
 	//如果是监听模式，该规约不发送任何下发报文
 	if( m_islisting ) return ;
 
+#ifdef _Mutil_	
 	if(1/*m_timeSet.time_out(m_scaninter_id)*/)//时间周期到
+#else
+	if(m_timeSet.time_out(m_scaninter_id))//时间周期到
+#endif
 	{
 		if( !isSending() )
 		{
@@ -400,6 +404,7 @@ void CProto_Modbus_101::findNextCommand()
 
 	if (m_pSdev->isInit != TRUE)
 	{
+		m_pRdev->isInit = FALSE;
 		if (m_nflag >= 3)
 		{
 			if (m_nFqcy == 0)
@@ -2675,7 +2680,7 @@ void CProto_Modbus_101::mainRx()
 
 	rcvleng = get(buff, rcvdataleng);
 
-	
+#ifdef _Mutil_	
 	if (m_bTimeOut && m_isExclusive)
 	{
 		if (m_nSOENum <= 0 || m_record_feature.size() == 0)
@@ -2735,32 +2740,24 @@ void CProto_Modbus_101::mainRx()
 		repotrAckRecv(true);//接收数据
 		return;
 	}
+#else
+	if ( m_protocolEvent == Waitting && m_timeSet.time_out(m_rtimeout_id))
+	{
 
+		CDateTime tNow = CDateTime::currentDateTime();
+		logprint(LOG_PROTOCOL+ m_route, "接收： -- %02d:%02d:%02d  %03d,  接收超时",tNow.hour(), tNow.minute(), tNow.second(), tNow.microsec()/1000);
 
+		//if (!m_bOk)
+		{
+			//addRecvErrFrmNum();
+			m_protocolEvent = TimeOut;
+		}
 
-	//if (m_bTimeOut)
-	//{
-	//	if (!m_isExclusive || (m_protocolEvent == Waitting && m_timeSet.time_out(m_rtimeout_id)))
-	//	{
-	//	//if(m_protocolEvent == Waitting)
-	//	//{
-	//		//if(m_timeSet.time_out(m_rtimeout_id))
-	//	//	{
-	//			m_isExclusive = false;	//下发命令超时，直接跳出继续轮询数据。
-	//			CDateTime tNow = CDateTime::currentDateTime();
-	//			logprint(LOG_PROTOCOL+ m_route, "接收： -- %02d:%02d:%02d  %03d,  接收超时",tNow.hour(), tNow.minute(), tNow.second(), tNow.microsec()/1000);
+		repotrAckRecv(true);//接收数据
+		return;
+	}
 
-	//			if (!m_bOk)
-	//			{
-	//				addRecvErrFrmNum();
-	//				m_protocolEvent = TimeOut;
-	//			}
-	//			repotrAckRecv(true);//接收数据
-	//			//return;
-	//	}
-	//	m_bTimeOut = false;
-	//	return;
-	//}
+#endif
 
 
 	if (rcvleng == 0)
@@ -2775,8 +2772,12 @@ void CProto_Modbus_101::mainRx()
 		{
 			logprint(LOG_PROTOCOL + m_route, "接收正确：本次接收长度：%d ",rcvleng , m_recv_msg.length);
 			addRecvOkFrmNum();
+		#ifdef _Mutil_	
 			m_bOk = true;
-			//repotrAckRecv(true);//接收数据
+		#else
+			repotrAckRecv(true);//接收数据
+		#endif
+			
 		}
 	}
 	else if (nRet == RECEIVE_UNFINISHED)
@@ -2806,8 +2807,11 @@ void CProto_Modbus_101::mainRx()
 			logprint(LOG_PROTOCOL + m_route, "接收错误：路径出错");	
 		}
 		addRecvErrFrmNum();
-		//repotrAckRecv(true);
+	#ifdef _Mutil_	
 		
+	#else
+		repotrAckRecv(true);
+	#endif
 	}
 }
 

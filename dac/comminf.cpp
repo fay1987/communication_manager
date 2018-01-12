@@ -98,6 +98,17 @@ const DAC_STATION* CCommInf::station(hInt32 no/* =0 */,bool isValidCheck /* = tr
 
 
 
+DAC_SENDDEV* CCommInf::senddev(const char* code,bool isValidCheck /*= true*/)
+{
+	if (m_pComPara == NULL || m_pComInfo == NULL) return 0;
+	return senddev( senddevNo(code),isValidCheck );
+}
+
+const DAC_SENDDEV* CCommInf::senddev(const char* code,bool isValidCheck /*= true*/) const
+{
+	if (m_pComPara == NULL || m_pComInfo == NULL) return 0;
+	return senddev( senddevNo(code),isValidCheck );
+}
 
 DAC_SENDDEV* CCommInf::senddev(hInt32 no/* =0 */,bool isValidCheck /* = true */)
 {
@@ -1055,6 +1066,21 @@ DAC_YCCON* PDT::CCommInf::yccon( int ntype )
 	return NULL;
 }
 
+hInt32 PDT::CCommInf::senddevNo( const char* code ) const
+{
+	if (m_pComPara == NULL || m_pComInfo == NULL) return -1;
+
+	if (code == 0) return -1;
+
+	for (hUInt32 i=0;i<m_pComInfo->system.senddevNum;i++)
+	{
+		if ( strcmp(code,m_pComPara->senddev[i].code) == 0 )
+			return i;
+	}
+
+	return -1;
+}
+
 hInt32 PDT::CCommInf::recvdevNo( const char* code ) const
 {
 	if (m_pComPara == NULL || m_pComInfo == NULL) return -1;
@@ -1087,3 +1113,5 @@ DAC_RECVDEV_INFO* PDT::CCommInf::rdevInfo( hInt32 no /*= 0*/,bool isValidCheck /
 
 	return 0;
 }
+
+

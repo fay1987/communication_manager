@@ -46,6 +46,8 @@ namespace	PDT
 		LOADPARA_YK				=	0x00004000,	//遥控表
 		LOADPARA_YT				=	0x00008000,	//遥调表
 		LOADPARA_WEBSERVER		=	0x00010000,	//通知gtwebserver程序重新加载
+		LOADPARA_RDEV			=	0x00020000,	//接收装置表
+		LOADPARA_SDEV			=	0x00040000,	//发送装置表
 		LOADPARA_ALL			=	0xFFFFFFFF	//全部加载
 	};
 	//通道状态

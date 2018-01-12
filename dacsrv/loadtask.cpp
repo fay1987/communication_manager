@@ -77,7 +77,11 @@ hInt32 CLoadTask::svc()
 
 	//wfp add for 规约heart检测
 	m_timeId = m_timer.add(1000);	//1s
-	m_timeOutID = m_timer.add(CONFIG::instance()->timeinterval());
+	if(CONFIG::instance()->timeinterval() > 0)
+	{
+		m_timeOutID = m_timer.add(CONFIG::instance()->timeinterval());
+	}
+
 	m_timer.start();
 	
 	while ( 1 )
@@ -105,13 +109,14 @@ hInt32 CLoadTask::svc()
 		#endif
 
 		//add by yaoff	控制同时发送，同时接收
-		if (m_timer.time_out(m_timeOutID))
+		if(CONFIG::instance()->timeinterval() > 0)
 		{
-			m_linkTaskPool.setTimeOutFlag(true);
-			m_timer.start();
+			if (m_timer.time_out(m_timeOutID))
+			{
+				m_linkTaskPool.setTimeOutFlag(true);
+				m_timer.start();
+			}
 		}
-
-
 		//add end.
 
 		//装载参数表
@@ -133,7 +138,6 @@ hInt32 CLoadTask::svc()
 			{
 				logprint(LOG_DACSRV_BASE,"dacsrv:正在装载channel表 !");
 				m_loadPara.loadChannel();
-				m_loadPara.loadRecvDev();
 				pSystemInfo->loadParaFlag &= ~LOADPARA_CHANNEL;
 				pSystemInfo->loadParaFlag |=LOADPARA_ROUTE;
 				m_loadPara.loadRoute();
@@ -147,7 +151,6 @@ hInt32 CLoadTask::svc()
 			if(pSystemInfo->loadParaFlag & LOADPARA_GROUP)
 			{
 				m_loadPara.loadGroup();
-				m_loadPara.loadSendDev();
 				pSystemInfo->loadParaFlag &= ~LOADPARA_GROUP;
 				pSystemInfo->loadParaFlag |= LOADPARA_ROUTE;
 				m_loadPara.loadRoute();
@@ -180,6 +183,19 @@ hInt32 CLoadTask::svc()
 				m_loadPara.loadYt();
 				pSystemInfo->loadParaFlag &= ~LOADPARA_YT;
 			}
+
+			if (pSystemInfo->loadParaFlag & LOADPARA_RDEV)
+			{
+				m_loadPara.loadRecvDev();
+				pSystemInfo->loadParaFlag &= ~LOADPARA_RDEV;
+			}
+
+			if (pSystemInfo->loadParaFlag & LOADPARA_SDEV)
+			{
+				m_loadPara.loadSendDev();
+				pSystemInfo->loadParaFlag &= ~LOADPARA_SDEV;
+			}
+
 			/*wfp removed to ctrltask
 			//YC
 			if(pSystemInfo->loadParaFlag & LOADPARA_YC)

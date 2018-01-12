@@ -160,6 +160,8 @@ hInt32	CLinkTaskPool::svc()
 		{
 			addHeartLink(heartID,linkNoVec);	//wfp add at 20110714
 
+			if(CONFIG::instance()->timeinterval() > 0)
+			{
 			if (m_bTimeOut)
 			{
 				for (hUInt32 i=0;i<linkNoVec.size();i++)
@@ -170,6 +172,8 @@ hInt32	CLinkTaskPool::svc()
 				}
 				m_bTimeOut = false;
 			}
+			}
+
 			for (hUInt32 i=0;i<linkNoVec.size();i++)
 			{			
 				try
