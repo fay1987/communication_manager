@@ -58,7 +58,7 @@
 #define DAC_RECVDEV_NUM				5		//接收装置个数
 #else
 
-//#define DAC_STATION_NUM				256			//厂站个数
+//#define DAC_STATION_NUM				256		//厂站个数
 //#define	DAC_CHANNEL_NUM				128		//通道个数
 //#define	DAC_GROUP_NUM				128		//数据组个数
 //#define	DAC_ROUTE_NUM				160		//路径个数
