@@ -50,8 +50,7 @@ int CStateTask::svc()
 	ACE_OS::memset(m_channelStateFirst,1,sizeof(m_channelStateFirst));
 	ACE_OS::memset(m_routeFreeCount,0,sizeof(m_routeFreeCount));
 
-	//ACE_Time_Value	tvSleep(0,10000);			//10ms
-	ACE_Time_Value	tvSleep(0,100000);			//100ms
+	ACE_Time_Value	tvSleep(0,10000);			//10ms
 	ACE_Thread_Manager *mgr = this->thr_mgr ();
 	DAC_SYSTEM_INFO* pSystemInfo = m_commInf.systemInfo();
 

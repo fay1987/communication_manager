@@ -245,7 +245,7 @@ void CLink::run()
 			{
 				if(!pRouteInfo->switchFlag)
 				{
-					if ((CONFIG::instance()->timeinterval() > 0) && m_bTimeOut)
+					if ((CHANNEL_TYPE_SERIALWIRELESS == pChannel->type) && m_bTimeOut)
 					{
 						//m_pProtocol[pChannelInfo->curRouteOrder]->setTimeOut();
 						//hInt32 routeno = pChannelInfo->routes[pChannelInfo->curRouteOrder];
@@ -302,7 +302,7 @@ void CLink::run()
 				if(( ACE_OS::gettimeofday() - m_curRouteBegin).msec() > pChannel->switchTimeOut * 1000 
 				||  pRouteInfo->switchFlag)
 				{
-					if(CONFIG::instance()->timeinterval() > 0)
+					if(CHANNEL_TYPE_SERIALWIRELESS == pChannel->type)
 					{
 						m_pProtocol[pChannelInfo->curRouteOrder]->setTimeOut();
 						if (!(m_pProtocol[pChannelInfo->curRouteOrder]->isExclusive()))

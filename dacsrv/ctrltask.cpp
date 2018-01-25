@@ -52,8 +52,7 @@ int CCtrlTask::svc()
 	m_timeId = m_timer.add(1000);	//1000ms
 	m_timer.start();
 
-	//ACE_Time_Value tv(0,10000);			//10ms
-	ACE_Time_Value tv(0,100000);			//100ms
+	ACE_Time_Value tv(0,10000);			//10ms
 	while (true)
 	{
 		if ( thr_mgr()->testcancel( thr_mgr()->thr_self() ) )

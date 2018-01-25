@@ -135,7 +135,7 @@ hInt32	CLinkTaskPool::svc()
 	DAC_SYSTEM_INFO *pSystemInfo = m_commInf.systemInfo();
 	ACE_Thread_Manager* mgr = this->thr_mgr();
 	int no = 0;
-	ACE_Time_Value tv(0,100000);	//100ms 
+	ACE_Time_Value tv(0,DAC_PROTO_RUN_DELAY);	//10ms 
 	CLink* pLink = NULL;
 	LINKNO_VECTOR	linkNoVec;
 	int poolSize = CONFIG::instance()->linkThreadPoolSize();
@@ -160,8 +160,6 @@ hInt32	CLinkTaskPool::svc()
 		{
 			addHeartLink(heartID,linkNoVec);	//wfp add at 20110714
 
-			if(CONFIG::instance()->timeinterval() > 0)
-			{
 			if (m_bTimeOut)
 			{
 				for (hUInt32 i=0;i<linkNoVec.size();i++)
@@ -171,7 +169,6 @@ hInt32	CLinkTaskPool::svc()
 					pLink->setTimeOutFlag(m_bTimeOut);
 				}
 				m_bTimeOut = false;
-			}
 			}
 
 			for (hUInt32 i=0;i<linkNoVec.size();i++)

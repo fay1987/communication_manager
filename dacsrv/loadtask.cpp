@@ -77,10 +77,8 @@ hInt32 CLoadTask::svc()
 
 	//wfp add for 规约heart检测
 	m_timeId = m_timer.add(1000);	//1s
-	if(CONFIG::instance()->timeinterval() > 0)
-	{
-		m_timeOutID = m_timer.add(CONFIG::instance()->timeinterval());
-	}
+	m_timeOutID = m_timer.add(CONFIG::instance()->timeinterval());
+	
 
 	m_timer.start();
 	
@@ -109,13 +107,10 @@ hInt32 CLoadTask::svc()
 		#endif
 
 		//add by yaoff	控制同时发送，同时接收
-		if(CONFIG::instance()->timeinterval() > 0)
+		if (m_timer.time_out(m_timeOutID))
 		{
-			if (m_timer.time_out(m_timeOutID))
-			{
-				m_linkTaskPool.setTimeOutFlag(true);
-				m_timer.start();
-			}
+			m_linkTaskPool.setTimeOutFlag(true);
+			m_timer.start();
 		}
 		//add end.
 

@@ -17,7 +17,7 @@ CConfig::CConfig()
 	m_filterRoute = false;
 	m_filterGroup = false;
 	m_filterBegin = false;
-	m_timeinterval = 0;
+	m_timeinterval = 500;
 }
 
 CConfig::~CConfig()
